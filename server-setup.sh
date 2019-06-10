@@ -28,5 +28,5 @@ apt-get update && apt-get install -y docker-ce
 
 # Install ZSH and Prezto
 apt-get install -y zsh
-curl -s https://gist.githubusercontent.com/yorch/635b9bd060007af01e904e70b319ac2a/raw/820b75b5c2ac4f36d135325211fcc66a02899fa8/setup-prezto.sh | zsh
+curl -s https://raw.githubusercontent.com/yorch/server-simple-setup/master/setup-prezto.sh | zsh
 chsh -s /bin/zsh
