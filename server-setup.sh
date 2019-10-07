@@ -10,6 +10,9 @@ locale-gen en_CA.UTF-8
 # Update all current packages
 apt-get update && apt-get upgrade -y
 
+# Cleanup old packages
+apt-get autoremove -y
+
 # Tools
 apt-get install -y git curl wget htop vim
 
