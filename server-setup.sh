@@ -7,16 +7,16 @@ timedatectl set-timezone America/New_York
 locale-gen en_US.UTF-8
 locale-gen en_CA.UTF-8
 
-apt-get update
+# Update all current packages
+apt-get update && apt-get upgrade -y
 
 # Tools
-apt-get install -y git curl wget htop
+apt-get install -y git curl wget htop vim
 
 # Install Docker
 apt-get install -y \
     apt-transport-https \
     ca-certificates \
-    curl \
     software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 apt-key fingerprint 0EBFCD88
