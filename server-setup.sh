@@ -52,3 +52,6 @@ chmod +x ${SPEEDTEST_BIN}
 apt-get install -y zsh
 curl -s https://raw.githubusercontent.com/yorch/server-simple-setup/master/setup-prezto.sh | zsh
 chsh -s /bin/zsh
+
+# Cleanup
+apt-get clean
