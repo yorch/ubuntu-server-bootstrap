@@ -47,6 +47,17 @@ wget \
     https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py
 chmod +x ${SPEEDTEST_BIN}
 
+# Make sure `python` exists
+PYTHON_BIN=/usr/bin/python
+if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
+  echo 'Python is not installed, trying to symlink python3'
+  if [ -x "$(command -v python3)" ]; then
+    PYTHON3_BIN=$(command -v python3)
+    ln -s ${PYTHON3_BIN} ${PYTHON_BIN}
+    echo "Symlinking python3 (${PYTHON3_BIN}) to python (${PYTHON_BIN})"
+  fi
+fi
+
 # Install ZSH and Prezto
 apt-get install -y zsh
 curl -s https://raw.githubusercontent.com/yorch/server-simple-setup/master/setup-prezto.sh | zsh

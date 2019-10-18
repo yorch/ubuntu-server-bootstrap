@@ -5,6 +5,7 @@ A very simple script to setup base Ubuntu 14+ server environment with:
 * Docker CE
 * Docker Compose
 * ZSH with Prezto
+* Symlinks `python3` to `python` if `python` command is not found
 * Tools:
   * `curl`
   * `git`
