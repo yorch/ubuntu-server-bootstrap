@@ -21,6 +21,7 @@ apt-get install -y \
     wget
 
 # Install Docker
+echo 'Installing Docker...'
 apt-get install -y \
     apt-transport-https \
     ca-certificates \
@@ -34,31 +35,44 @@ add-apt-repository \
 apt-get update && apt-get install -y docker-ce
 
 # Install Docker Compose
-DOCKER_COMPOSE_BIN=/usr/local/bin/docker-compose
-curl -L \
-    "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" \
-    -o ${DOCKER_COMPOSE_BIN}
-chmod +x ${DOCKER_COMPOSE_BIN}
+# https://github.com/docker/compose
+DOCKER_COMPOSE_BIN='/usr/local/bin/docker-compose'
+DOCKER_COMPOSE_VERSION='1.24.1'
+if ! [ -e ${DOCKER_COMPOSE_BIN} ]; then
+    echo 'Installing Docker Compose...'
+    curl -L \
+        "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
+        -o ${DOCKER_COMPOSE_BIN}
+    chmod +x ${DOCKER_COMPOSE_BIN}
+fi
 
 # Install SpeedTest
-SPEEDTEST_BIN=/usr/local/bin/speedtest-cli
-wget \
-    -O ${SPEEDTEST_BIN} \
-    https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py
-chmod +x ${SPEEDTEST_BIN}
+# https://github.com/sivel/speedtest-cli
+SPEEDTEST_BIN='/usr/local/bin/speedtest-cli'
+SPEEDTEST_VERSION='master'
+# SPEEDTEST_VERSION='v2.1.2'
+if ! [ -e ${SPEEDTEST_BIN} ]; then
+    echo 'Installing SpeedTest CLI...'
+    curl -L \
+        "https://raw.githubusercontent.com/sivel/speedtest-cli/${SPEEDTEST_VERSION}/speedtest.py" \
+        -o ${SPEEDTEST_BIN}
+    chmod +x ${SPEEDTEST_BIN}
+fi
 
 # Make sure `python` exists
 PYTHON_BIN=/usr/bin/python
 if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
-  echo 'Python is not installed, trying to symlink python3'
-  if [ -x "$(command -v python3)" ]; then
-    PYTHON3_BIN=$(command -v python3)
-    ln -s ${PYTHON3_BIN} ${PYTHON_BIN}
-    echo "Symlinking python3 (${PYTHON3_BIN}) to python (${PYTHON_BIN})"
-  fi
+    echo 'Python is not installed, trying to symlink python3...'
+    if [ -x "$(command -v python3)" ]; then
+        PYTHON3_BIN=$(command -v python3)
+        echo "Symlinking python3 (${PYTHON3_BIN}) to python (${PYTHON_BIN})..."
+        ln -s ${PYTHON3_BIN} ${PYTHON_BIN}
+    fi
 fi
 
 # Install ZSH and Prezto
+# https://github.com/sorin-ionescu/prezto
+echo 'Installing ZSH and Prezto...'
 apt-get install -y zsh
 curl -s https://raw.githubusercontent.com/yorch/server-simple-setup/master/setup-prezto.sh | zsh
 chsh -s /bin/zsh
@@ -66,3 +80,6 @@ chsh -s /bin/zsh
 # Cleanup old packages
 apt-get autoremove -y
 apt-get clean
+
+echo
+echo 'All Done! You should restart the machine now'
