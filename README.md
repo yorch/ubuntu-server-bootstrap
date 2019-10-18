@@ -3,8 +3,9 @@
 A very simple script to setup base Ubuntu 14+ server environment with:
 
 - Docker CE
+- Docker Compose
+- SpeedTest CLI
 - ZSH with Prezto
-
 
 ## To use it, run:
 
