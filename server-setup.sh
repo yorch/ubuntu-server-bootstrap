@@ -4,14 +4,12 @@
 timedatectl set-timezone America/New_York
 
 # Locales
-locale-gen en_US.UTF-8
-locale-gen en_CA.UTF-8
+locale-gen \
+    en_US.UTF-8 \
+    en_CA.UTF-8
 
 # Update all current packages
 apt-get update && apt-get upgrade -y
-
-# Cleanup old packages
-apt-get autoremove -y
 
 # Tools
 apt-get install -y \
@@ -53,5 +51,6 @@ apt-get install -y zsh
 curl -s https://raw.githubusercontent.com/yorch/server-simple-setup/master/setup-prezto.sh | zsh
 chsh -s /bin/zsh
 
-# Cleanup
+# Cleanup old packages
+apt-get autoremove -y
 apt-get clean
