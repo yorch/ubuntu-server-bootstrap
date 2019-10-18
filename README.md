@@ -6,13 +6,13 @@ A very simple script to setup base Ubuntu 14+ server environment with:
 * Docker Compose
 * ZSH with Prezto
 * Tools:
-    - `curl`
-    - `git`
-    - `htop`: Better `top`
-    - `tig`: CLI git client
-    - `vim`
-    - `wget`
-    - SpeedTest CLI
+  * `curl`
+  * `git`
+  * `htop`: Better `top`
+  * `tig`: CLI git client
+  * `vim`
+  * `wget`
+  * SpeedTest CLI
 
 ## Installation
 
