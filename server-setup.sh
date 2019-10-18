@@ -16,6 +16,7 @@ apt-get install -y \
     curl \
     git \
     htop \
+    tig \
     vim \
     wget
 
