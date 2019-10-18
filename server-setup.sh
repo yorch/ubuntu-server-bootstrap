@@ -14,7 +14,12 @@ apt-get update && apt-get upgrade -y
 apt-get autoremove -y
 
 # Tools
-apt-get install -y git curl wget htop vim
+apt-get install -y \
+    curl \
+    git \
+    htop \
+    vim \
+    wget
 
 # Install Docker
 apt-get install -y \
@@ -28,6 +33,20 @@ add-apt-repository \
    $(lsb_release -cs) \
    stable"
 apt-get update && apt-get install -y docker-ce
+
+# Install Docker Compose
+DOCKER_COMPOSE_BIN=/usr/local/bin/docker-compose
+curl -L \
+    "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" \
+    -o ${DOCKER_COMPOSE_BIN}
+chmod +x ${DOCKER_COMPOSE_BIN}
+
+# Install SpeedTest
+SPEEDTEST_BIN=/usr/local/bin/speedtest-cli
+wget \
+    -O ${SPEEDTEST_BIN} \
+    https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py
+chmod +x ${SPEEDTEST_BIN}
 
 # Install ZSH and Prezto
 apt-get install -y zsh
