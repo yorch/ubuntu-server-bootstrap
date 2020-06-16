@@ -13,6 +13,7 @@ apt-get update && apt-get upgrade -y
 
 # Tools
 apt-get install -y \
+    byobu \
     curl \
     git \
     htop \
