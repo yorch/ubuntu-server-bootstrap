@@ -38,10 +38,10 @@ apt-get update && apt-get install -y docker-ce
 # Install Docker Compose
 # https://github.com/docker/compose
 DOCKER_COMPOSE_BIN='/usr/local/bin/docker-compose'
-DOCKER_COMPOSE_VERSION='1.24.1'
+DOCKER_COMPOSE_VERSION='1.26.0'
 if ! [ -e ${DOCKER_COMPOSE_BIN} ]; then
     echo 'Installing Docker Compose...'
-    curl -L \
+    curl -qL \
         "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
         -o ${DOCKER_COMPOSE_BIN}
     chmod +x ${DOCKER_COMPOSE_BIN}
