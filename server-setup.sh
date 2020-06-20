@@ -41,7 +41,7 @@ DOCKER_COMPOSE_BIN='/usr/local/bin/docker-compose'
 DOCKER_COMPOSE_VERSION='1.26.0'
 if ! [ -e ${DOCKER_COMPOSE_BIN} ]; then
     echo 'Installing Docker Compose...'
-    curl -qL \
+    curl -sSL \
         "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
         -o ${DOCKER_COMPOSE_BIN}
     chmod +x ${DOCKER_COMPOSE_BIN}
@@ -54,7 +54,7 @@ SPEEDTEST_VERSION='master'
 # SPEEDTEST_VERSION='v2.1.2'
 if ! [ -e ${SPEEDTEST_BIN} ]; then
     echo 'Installing SpeedTest CLI...'
-    curl -L \
+    curl -sSL \
         "https://raw.githubusercontent.com/sivel/speedtest-cli/${SPEEDTEST_VERSION}/speedtest.py" \
         -o ${SPEEDTEST_BIN}
     chmod +x ${SPEEDTEST_BIN}
@@ -75,7 +75,7 @@ fi
 # https://github.com/sorin-ionescu/prezto
 echo 'Installing ZSH and Prezto...'
 apt-get install -y zsh
-curl -s https://raw.githubusercontent.com/yorch/server-simple-setup/master/setup-prezto.sh | zsh
+curl -sSL https://raw.githubusercontent.com/yorch/server-simple-setup/master/setup-prezto.sh | zsh
 chsh -s /bin/zsh
 
 # Cleanup old packages
