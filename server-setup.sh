@@ -17,6 +17,7 @@ apt-get install -y \
     curl \
     git \
     htop \
+    neovim \
     tig \
     vim \
     wget
