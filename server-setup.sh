@@ -39,7 +39,7 @@ apt-get update && apt-get install -y docker-ce
 # Install Docker Compose
 # https://github.com/docker/compose
 DOCKER_COMPOSE_BIN='/usr/local/bin/docker-compose'
-DOCKER_COMPOSE_VERSION='1.26.0'
+DOCKER_COMPOSE_VERSION='1.28.3'
 if ! [ -e ${DOCKER_COMPOSE_BIN} ]; then
     echo 'Installing Docker Compose...'
     curl -sSL \
