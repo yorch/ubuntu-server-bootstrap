@@ -18,6 +18,7 @@ apt-get install -y \
     git \
     htop \
     neovim \
+    silversearcher-ag \
     tig \
     vim \
     wget
