@@ -2,18 +2,19 @@
 
 A very simple script to setup base Ubuntu 14+ server environment with:
 
-* Docker CE
-* [Docker Compose](https://github.com/docker/compose)
-* ZSH with [Prezto](https://github.com/sorin-ionescu/prezto)
-* Symlinks `python3` to `python` if `python` command is not found
-* Tools:
-  * `curl`
-  * `git`
-  * `htop`: Better `top`
-  * `tig`: CLI git client
-  * `vim`
-  * `wget`
-  * [SpeedTest CLI](https://github.com/sivel/speedtest-cli)
+- Docker CE
+- [Docker Compose](https://github.com/docker/compose)
+- ZSH with [Prezto](https://github.com/sorin-ionescu/prezto)
+- Symlinks `python3` to `python` if `python` command is not found
+- Tools:
+  - `curl`
+  - `git`
+  - `htop`: Better `top`
+  - `neovim`
+  - `tig`: CLI git client
+  - `vim`
+  - `wget`
+  - [SpeedTest CLI](https://github.com/sivel/speedtest-cli)
 
 ## Installation
 

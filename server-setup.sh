@@ -11,6 +11,9 @@ locale-gen \
 # Update all current packages
 apt-get update && apt-get upgrade -y
 
+# Adds repo for latest neovim version
+add-apt-repository -y ppa:neovim-ppa/stable
+
 # Tools
 apt-get install -y \
     byobu \
@@ -22,6 +25,10 @@ apt-get install -y \
     tig \
     vim \
     wget
+
+# Set neovim as default vim
+update-alternatives --set vi $(which nvim)
+update-alternatives --set vim $(which nvim)
 
 # Install Docker
 echo 'Installing Docker...'
@@ -80,6 +87,9 @@ echo 'Installing ZSH and Prezto...'
 apt-get install -y zsh
 curl -sSL https://raw.githubusercontent.com/yorch/server-simple-setup/master/setup-prezto.sh | zsh
 chsh -s /bin/zsh
+
+# Install SpaceVim
+curl -sLf https://spacevim.org/install.sh | bash
 
 # Cleanup old packages
 apt-get autoremove -y
