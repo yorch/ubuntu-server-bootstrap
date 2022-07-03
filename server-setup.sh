@@ -47,15 +47,20 @@ apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
 
 # Install Docker Compose
 # https://github.com/docker/compose
-DOCKER_COMPOSE_BIN='/usr/local/bin/docker-compose'
-DOCKER_COMPOSE_VERSION='1.29.2'
+DOCKER_CLI_PLUGINS_DIR='/usr/local/lib/docker/cli-plugins'
+DOCKER_COMPOSE_BIN="${DOCKER_CLI_PLUGINS_DIR}/docker-compose"
+DOCKER_COMPOSE_VERSION='2.6.1'
 if ! [ -e ${DOCKER_COMPOSE_BIN} ]; then
-    echo 'Installing Docker Compose...'
+    mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
+    echo "Installing Docker Compose version ${DOCKER_COMPOSE_VERSION}..."
     curl -sSL \
-        "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
+        "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-$(uname -m)" \
         -o ${DOCKER_COMPOSE_BIN}
     chmod +x ${DOCKER_COMPOSE_BIN}
 fi
+
+# Install Docker Compose Switch (to ease transition from Docker Compose v1)
+curl -fL https://raw.githubusercontent.com/docker/compose-switch/master/install_on_linux.sh | sh
 
 # Install SpeedTest
 # https://github.com/sivel/speedtest-cli

@@ -1,9 +1,10 @@
 # Simple Server Setup
 
-A very simple script to setup base Ubuntu 14+ server environment with:
+A very simple script to setup base Ubuntu 18+ server environment with:
 
 - Docker CE
-- [Docker Compose](https://github.com/docker/compose)
+- [Docker Compose v2](https://github.com/docker/compose)
+- [Docker Compose Switch](https://github.com/docker/compose-switch)
 - ZSH with [Prezto](https://github.com/sorin-ionescu/prezto)
 - Symlinks `python3` to `python` if `python` command is not found
 - Tools:
