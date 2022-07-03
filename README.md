@@ -21,9 +21,9 @@ A very simple script to setup base Ubuntu 14+ server environment with:
 Just need to run:
 
 ```bash
-wget -q -O - https://raw.githubusercontent.com/yorch/server-simple-setup/master/server-setup.sh | bash
+wget -q -O - https://raw.githubusercontent.com/yorch/server-simple-setup/main/server-setup.sh | bash
 # Or with `curl` if already installed:
-curl -s https://raw.githubusercontent.com/yorch/server-simple-setup/master/server-setup.sh | bash
+curl -s https://raw.githubusercontent.com/yorch/server-simple-setup/main/server-setup.sh | bash
 ```
 
 This will take a few minutes, after its done, you might want to restart the box in case there is a newer kernel installed that just got installed.
