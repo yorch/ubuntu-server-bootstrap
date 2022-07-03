@@ -48,7 +48,7 @@ apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
 # Install Docker Compose
 # https://github.com/docker/compose
 DOCKER_COMPOSE_BIN='/usr/local/bin/docker-compose'
-DOCKER_COMPOSE_VERSION='1.28.3'
+DOCKER_COMPOSE_VERSION='1.29.2'
 if ! [ -e ${DOCKER_COMPOSE_BIN} ]; then
     echo 'Installing Docker Compose...'
     curl -sSL \
