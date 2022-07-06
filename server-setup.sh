@@ -9,10 +9,7 @@ locale-gen \
     en_CA.UTF-8
 
 # Update all current packages
-apt-get update && apt-get upgrade -y
-
-# Adds repo for latest neovim version
-add-apt-repository -y ppa:neovim-ppa/stable
+apt-get update && apt-get upgrade -y && apt autoremove -y
 
 # Tools
 apt-get install -y \
@@ -20,15 +17,10 @@ apt-get install -y \
     curl \
     git \
     htop \
-    neovim \
     silversearcher-ag \
     tig \
     vim \
     wget
-
-# Set neovim as default vim
-update-alternatives --set vi $(which nvim)
-update-alternatives --set vim $(which nvim)
 
 # Install Docker
 echo 'Installing Docker...'
@@ -61,6 +53,14 @@ fi
 
 # Install Docker Compose Switch (to ease transition from Docker Compose v1)
 curl -fL https://raw.githubusercontent.com/docker/compose-switch/master/install_on_linux.sh | sh
+
+# Install NeoVim
+# Adds repo for latest neovim version
+add-apt-repository -y ppa:neovim-ppa/stable
+apt-get update && apt-get install -y neovim
+# Set neovim as default vim
+update-alternatives --set vi $(which nvim)
+update-alternatives --set vim $(which nvim)
 
 # Install SpeedTest
 # https://github.com/sivel/speedtest-cli
@@ -97,8 +97,7 @@ chsh -s /bin/zsh
 curl -sLf https://spacevim.org/install.sh | bash
 
 # Cleanup old packages
-apt-get autoremove -y
-apt-get clean
+apt-get autoremove -y && apt-get clean
 
 echo
 echo 'All Done! You should restart the machine now'
