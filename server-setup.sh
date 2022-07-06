@@ -9,7 +9,7 @@ locale-gen \
     en_CA.UTF-8
 
 # Update all current packages
-apt-get update && apt-get upgrade -y
+apt-get update && apt-get upgrade -y && apt autoremove -y
 
 # Tools
 apt-get install -y \
