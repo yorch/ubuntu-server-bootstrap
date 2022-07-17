@@ -8,11 +8,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ENV SCRIPT_FILE=bootstrap.sh
 
-WORKDIR /opt
-
-ADD ${SCRIPT_FILE} ${SCRIPT_FILE}
+WORKDIR /root
 
 RUN cat /etc/lsb-release
+
+ADD ${SCRIPT_FILE} ${SCRIPT_FILE}
 
 RUN bash ${SCRIPT_FILE} && \
     rm -f ${SCRIPT_FILE} && \
