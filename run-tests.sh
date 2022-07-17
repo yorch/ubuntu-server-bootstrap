@@ -5,7 +5,7 @@ BASE_IMAGES=(
     "ubuntu:20.04"
     "ubuntu:22.04"
 )
-IMAGE_TAG_BASE=server-simple-setup
+IMAGE_TAG_BASE=ubuntu-server-bootstrap
 DOCKERFILE="Dockerfile.test"
 
 for base_image in "${BASE_IMAGES[@]}"; do

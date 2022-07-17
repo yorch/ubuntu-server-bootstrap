@@ -1,6 +1,6 @@
-# Simple Server Setup
+# Ubuntu Server Bootstrap
 
-A very simple script to setup base Ubuntu 18+ server environment with:
+A straightforward script to setup base Ubuntu 18+ servers environment with:
 
 - Docker CE
 - [Docker Compose v2](https://github.com/docker/compose)
@@ -15,6 +15,7 @@ A very simple script to setup base Ubuntu 18+ server environment with:
   - `tig`: CLI git client
   - `vim`
   - `wget`
+  - [SpaceVim](https://spacevim.org/)
   - [SpeedTest CLI](https://github.com/sivel/speedtest-cli)
 
 ## Installation
@@ -22,9 +23,13 @@ A very simple script to setup base Ubuntu 18+ server environment with:
 Just need to run:
 
 ```bash
-wget -q -O - https://raw.githubusercontent.com/yorch/server-simple-setup/main/server-setup.sh | bash
-# Or with `curl` if already installed:
-curl -s https://raw.githubusercontent.com/yorch/server-simple-setup/main/server-setup.sh | bash
+wget -q -O - https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/server-setup.sh | bash
+```
+
+Or with `curl` if already installed:
+
+```bash
+curl -s https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/server-setup.sh | bash
 ```
 
 This will take a few minutes, after its done, you might want to restart the box in case there is a newer kernel installed that just got installed.

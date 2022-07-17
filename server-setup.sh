@@ -137,7 +137,7 @@ fi
 # Install ZSH and Prezto
 # https://github.com/sorin-ionescu/prezto
 echo 'Installing ZSH and Prezto...'
-ZPREZTO_SETUP_URL="https://raw.githubusercontent.com/yorch/server-simple-setup/main/setup-prezto.sh"
+ZPREZTO_SETUP_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/setup-prezto.sh"
 ${APT_INSTALL} zsh
 ${CURL_CMD} "${ZPREZTO_SETUP_URL}" | zsh
 chsh -s /bin/zsh
