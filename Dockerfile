@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=ubuntu:20.04
+ARG BASE_IMAGE=ubuntu:22.04
 
 FROM $BASE_IMAGE
 
@@ -15,6 +15,7 @@ ADD ${SCRIPT_FILE} ${SCRIPT_FILE}
 RUN cat /etc/lsb-release
 
 RUN bash ${SCRIPT_FILE} && \
+    rm -f ${SCRIPT_FILE} && \
     rm -rf /apt/cache /var/lib/apt/lists/*
 
 ENTRYPOINT [ "zsh" ]

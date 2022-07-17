@@ -6,7 +6,6 @@ BASE_IMAGES=(
     "ubuntu:22.04"
 )
 IMAGE_TAG_BASE=ubuntu-server-bootstrap
-DOCKERFILE="Dockerfile.test"
 
 for base_image in "${BASE_IMAGES[@]}"; do
     echo "Running tests with ${base_image}"
@@ -14,6 +13,5 @@ for base_image in "${BASE_IMAGES[@]}"; do
         --progress=plain \
         --build-arg BASE_IMAGE=${base_image} \
         -t "${IMAGE_TAG_BASE}-${base_image}" \
-        -f ${DOCKERFILE} \
         .
 done
