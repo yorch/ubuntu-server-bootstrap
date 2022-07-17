@@ -5,7 +5,7 @@ BASE_IMAGES=(
     "ubuntu:20.04"
     "ubuntu:22.04"
 )
-IMAGE_TAG=server-simple-setup
+IMAGE_TAG_BASE=server-simple-setup
 DOCKERFILE="Dockerfile.test"
 
 for base_image in "${BASE_IMAGES[@]}"; do
@@ -13,7 +13,7 @@ for base_image in "${BASE_IMAGES[@]}"; do
     docker build \
         --progress=plain \
         --build-arg BASE_IMAGE=${base_image} \
-        -t ${IMAGE_TAG} \
+        -t ${IMAGE_TAG_BASE}-${BASE_IMAGE} \
         -f ${DOCKERFILE} \
         .
 done

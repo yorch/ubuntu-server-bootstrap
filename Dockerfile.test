@@ -10,6 +10,6 @@ ADD server-setup.sh /server-setup.sh
 
 RUN cat /etc/lsb-release
 
-RUN bash server-setup.sh
+RUN bash /server-setup.sh
 
 ENTRYPOINT [ "zsh" ]

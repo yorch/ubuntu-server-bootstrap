@@ -50,7 +50,6 @@ ${APT_INSTALL} \
     curl \
     git \
     htop \
-    jq \
     silversearcher-ag \
     tig \
     vim \
@@ -153,3 +152,4 @@ apt-get clean
 
 echo
 echo 'All Done! You should restart the machine now'
+echo
