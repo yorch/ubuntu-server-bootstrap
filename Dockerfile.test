@@ -10,6 +10,7 @@ ADD server-setup.sh /server-setup.sh
 
 RUN cat /etc/lsb-release
 
-RUN bash /server-setup.sh
+RUN bash /server-setup.sh && \
+    rm -rf /apt/cache /var/lib/apt/lists/*
 
 ENTRYPOINT [ "zsh" ]
