@@ -44,6 +44,20 @@ This will take a few minutes, after its done, you might want to restart the box 
 
 At the minimum, you should log out and log in again so `zsh` gets activated on your session.
 
+## Docker
+
+You can test or use this script with Docker by running:
+
+```sh
+docker build -t bootstrapped-ubuntu .
+```
+
+And then run it:
+
+```sh
+docker run -it bootstrapped-ubuntu
+```
+
 ## License
 
 MIT, see [LICENSE](/LICENSE) for details.
