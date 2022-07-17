@@ -74,7 +74,7 @@ ${APT_INSTALL} \
     wget
 
 # Install latest Docker version
-echo 'Installing Docker...'
+echo "Installing Docker..."
 ${APT_INSTALL} \
     apt-transport-https \
     ca-certificates \
@@ -95,12 +95,13 @@ ${APT_UPDATE} && ${APT_INSTALL} \
 # Install Docker Compose
 # https://github.com/docker/compose
 DOCKER_CLI_PLUGINS_DIR="/usr/local/lib/docker/cli-plugins"
-DOCKER_COMPOSE_REPO="docker/compose"
 DOCKER_COMPOSE_BIN="${DOCKER_CLI_PLUGINS_DIR}/docker-compose"
+DOCKER_COMPOSE_REPO="docker/compose"
+DOCKER_COMPOSE_ASSET="docker-compose-linux-$(uname -m)"
 if ! [ -e "${DOCKER_COMPOSE_BIN}" ]; then
     mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
     echo "Installing Docker Compose..."
-    downloadLatestRelease "${DOCKER_COMPOSE_REPO}" "docker-compose-linux-$(uname -m)" "${DOCKER_COMPOSE_BIN}"
+    downloadLatestRelease "${DOCKER_COMPOSE_REPO}" "${DOCKER_COMPOSE_ASSET}" "${DOCKER_COMPOSE_BIN}"
     echo "Docker Compose installed."
 else
     echo "Docker Compose already installed."
@@ -109,9 +110,10 @@ fi
 # Install Docker Compose Switch (to ease transition from Docker Compose v1)
 DOCKER_COMPOSE_SWITCH_BIN="${USR_BIN_DIR}/compose-switch"
 DOCKER_COMPOSE_SWITCH_REPO="docker/compose-switch"
+DOCKER_COMPOSE_SWITCH_ASSET="docker-compose-linux-amd64"
 if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
     echo "Installing Docker Switch..."
-    downloadLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "docker-compose-linux-amd64" "${DOCKER_COMPOSE_SWITCH_BIN}"
+    downloadLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
     # Set Docker Compose Switch to replace Docker Compose v1
     update-alternatives --install ${USR_BIN_DIR}/docker-compose docker-compose "${DOCKER_COMPOSE_SWITCH_BIN}" 99
     echo "Docker Switch installed."
@@ -131,9 +133,10 @@ update-alternatives --set vim $(which nvim)
 # https://github.com/sivel/speedtest-cli
 SPEEDTEST_BIN="${USR_BIN_DIR}/speedtest-cli"
 SPEEDTEST_REPO="sivel/speedtest-cli"
+SPEEDTEST_ASSET="speedtest.py"
 if ! [ -e ${SPEEDTEST_BIN} ]; then
     echo "Installing SpeedTest CLI..."
-    downloadLatestRelease "${SPEEDTEST_REPO}" "speedtest.py" "${SPEEDTEST_BIN}"
+    downloadLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}"
 else
     echo "SpeedTest CLI already installed."
 fi
@@ -141,7 +144,7 @@ fi
 # Make sure `python` exists
 PYTHON_BIN=/usr/bin/python
 if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
-    echo 'Python is not installed, trying to symlink python3...'
+    echo "Python is not installed, trying to symlink python3..."
     if [ -x "$(command -v python3)" ]; then
         PYTHON3_BIN=$(command -v python3)
         echo "Symlinking python3 (${PYTHON3_BIN}) to python (${PYTHON_BIN})..."
