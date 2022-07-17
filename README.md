@@ -24,25 +24,41 @@ It's tested with the following Ubuntu LTS versions:
 - `20.04`
 - `22.04`
 
-Although, most likely would work without problems in other non LTS versions.
+Although, most likely would work without problems in other Ubuntu non LTS versions.
 
 ## Installation
 
 Just need to run:
 
 ```bash
-wget -q -O - https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/server-setup.sh | bash
+wget -q -O - https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/bootstrap.sh | bash
 ```
 
 Or with `curl` if already installed:
 
 ```bash
-curl -s https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/server-setup.sh | bash
+curl -s https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/bootstrap.sh | bash
 ```
 
 This will take a few minutes, after its done, you might want to restart the box in case there is a newer kernel installed that just got installed.
 
 At the minimum, you should log out and log in again so `zsh` gets activated on your session.
+
+## Docker
+
+You can test or use this script with Docker.
+
+First, build the image with:
+
+```sh
+docker build -t bootstrapped-ubuntu .
+```
+
+And finally, run it in interactive mode with:
+
+```sh
+docker run -it bootstrapped-ubuntu
+```
 
 ## License
 

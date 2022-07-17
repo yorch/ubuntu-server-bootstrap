@@ -17,9 +17,10 @@ LOCALES=(
     "en_CA.UTF-8"
 )
 
-APT_UPDATE="apt-get update -qq"
-APT_INSTALL="apt-get install -qq" # -qq includes -y
-APT_AUTOREMOVE="apt-get autoremove -y"
+APT_CMD="apt-get -qq" # -qq includes -y
+APT_UPDATE="${APT_CMD} update"
+APT_INSTALL="${APT_CMD} install"
+APT_AUTOREMOVE="${APT_CMD} autoremove"
 USR_BIN_DIR=/usr/local/bin
 # -s, --silent        Silent mode
 # -S, --show-error    Show error even when -s is used
@@ -52,7 +53,7 @@ function downloadLatestRelease {
 }
 
 # Update all current packages
-${APT_UPDATE} && apt-get upgrade -y && ${APT_AUTOREMOVE}
+${APT_UPDATE} && ${APT_CMD} upgrade && ${APT_AUTOREMOVE}
 
 # Timezone
 TIMEDATECTL=timedatectl
@@ -171,7 +172,7 @@ ${CURL_CMD} https://spacevim.org/install.sh | bash
 # Cleanup old packages
 ${APT_AUTOREMOVE}
 # Cleanup caches
-apt-get clean
+${APT_CMD} clean
 
 echo
 echo "All Done! You should restart the machine now!"
