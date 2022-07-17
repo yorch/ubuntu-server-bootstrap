@@ -1,5 +1,7 @@
 #!/bin/bash
 
+USR_BIN_DIR=/usr/local/bin
+
 # Timezone
 timedatectl set-timezone America/New_York
 
@@ -46,18 +48,32 @@ apt-get update && \
 # https://github.com/docker/compose
 DOCKER_CLI_PLUGINS_DIR='/usr/local/lib/docker/cli-plugins'
 DOCKER_COMPOSE_BIN="${DOCKER_CLI_PLUGINS_DIR}/docker-compose"
-DOCKER_COMPOSE_VERSION='2.6.1'
-if ! [ -e ${DOCKER_COMPOSE_BIN} ]; then
+DOCKER_COMPOSE_VERSION='v2.6.1'
+DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-$(uname -m)"
+if ! [ -e "${DOCKER_COMPOSE_BIN}" ]; then
     mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
     echo "Installing Docker Compose version ${DOCKER_COMPOSE_VERSION}..."
-    curl -sSL \
-        "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-$(uname -m)" \
-        -o ${DOCKER_COMPOSE_BIN}
-    chmod +x ${DOCKER_COMPOSE_BIN}
+    curl -sSL "${DOCKER_COMPOSE_URL}" -o "${DOCKER_COMPOSE_BIN}"
+    chmod +x "${DOCKER_COMPOSE_BIN}"
+    echo "Docker Compose installed."
+else
+    echo "Docker Compose already installed."
 fi
 
 # Install Docker Compose Switch (to ease transition from Docker Compose v1)
-curl -fL https://raw.githubusercontent.com/docker/compose-switch/master/install_on_linux.sh | sh
+DOCKER_COMPOSE_SWITCH_BIN="${USR_BIN_DIR}/compose-switch"
+DOCKER_COMPOSE_SWITCH_VERSION="v1.0.5"
+DOCKER_COMPOSE_SWITCH_URL="https://github.com/docker/compose-switch/releases/download/${DOCKER_COMPOSE_SWITCH_VERSION}/docker-compose-linux-amd64"
+if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
+    echo "Installing Docker Switch version ${DOCKER_COMPOSE_SWITCH_VERSION}..."
+    curl -sSL "${DOCKER_COMPOSE_SWITCH_URL}" -o "${DOCKER_COMPOSE_SWITCH_BIN}"
+    chmod +x "${DOCKER_COMPOSE_SWITCH_BIN}"
+    # Set Docker Compose Switch to replace Docker Compose v1
+    update-alternatives --install ${USR_BIN_DIR}/docker-compose docker-compose "${DOCKER_COMPOSE_SWITCH_BIN}" 99
+    echo "Docker Switch installed."
+else
+    echo "Docker Switch already installed."
+fi
 
 # Install NeoVim
 # Adds repo for latest neovim version
@@ -69,7 +85,7 @@ update-alternatives --set vim $(which nvim)
 
 # Install SpeedTest
 # https://github.com/sivel/speedtest-cli
-SPEEDTEST_BIN='/usr/local/bin/speedtest-cli'
+SPEEDTEST_BIN="${USR_BIN_DIR}/speedtest-cli"
 SPEEDTEST_VERSION='master'
 # SPEEDTEST_VERSION='v2.1.2'
 if ! [ -e ${SPEEDTEST_BIN} ]; then
@@ -78,6 +94,8 @@ if ! [ -e ${SPEEDTEST_BIN} ]; then
         "https://raw.githubusercontent.com/sivel/speedtest-cli/${SPEEDTEST_VERSION}/speedtest.py" \
         -o ${SPEEDTEST_BIN}
     chmod +x ${SPEEDTEST_BIN}
+else
+    echo 'SpeedTest CLI already installed.'
 fi
 
 # Make sure `python` exists
@@ -95,7 +113,7 @@ fi
 # https://github.com/sorin-ionescu/prezto
 echo 'Installing ZSH and Prezto...'
 apt-get install -y zsh
-curl -sSL https://raw.githubusercontent.com/yorch/server-simple-setup/master/setup-prezto.sh | zsh
+curl -sSL https://raw.githubusercontent.com/yorch/server-simple-setup/main/setup-prezto.sh | zsh
 chsh -s /bin/zsh
 
 # Install SpaceVim
