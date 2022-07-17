@@ -8,6 +8,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ADD ../server-setup.sh /server-setup.sh
 
+RUN cat /etc/lsb-release
+
 RUN bash server-setup.sh
 
 ENTRYPOINT [ "zsh" ]
