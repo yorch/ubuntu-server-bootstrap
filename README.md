@@ -12,11 +12,19 @@ A straightforward script to setup base Ubuntu 18+ servers environment with:
   - `git`
   - `htop`: Better `top`
   - `neovim`
-  - `tig`: CLI git client
+  - `tig`: CLI Git client
   - `vim`
   - `wget`
   - [SpaceVim](https://spacevim.org/)
   - [SpeedTest CLI](https://github.com/sivel/speedtest-cli)
+
+It's tested with the following Ubuntu LTS versions:
+
+- `18.04`
+- `20.04`
+- `22.04`
+
+Although, most likely would work without problems in other non LTS versions.
 
 ## Installation
 
