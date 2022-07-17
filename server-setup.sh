@@ -39,9 +39,14 @@ function downloadLatestRelease {
     local REPO="${1}"
     local ASSET_NAME="${2}"
     local OUTPUT_FILE="${3}"
+    local USE_RAW="${4}"
     local VERSION=$(getLatestRelease ${REPO})
-    local URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET_NAME}"
-    echo "Downloading asset from repo ${REPO} version ${VERSION} to file ${OUTPUT_FILE}"
+    if [ "${USE_RAW}" = "raw" ]; then
+        local URL="https://raw.githubusercontent.com/${REPO}/${VERSION}/${ASSET_NAME}"
+    else
+        local URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET_NAME}"
+    fi
+    echo "Downloading from repo ${REPO} version ${VERSION} to file ${OUTPUT_FILE}"
     ${CURL_CMD} "${URL}" -o "${OUTPUT_FILE}"
     chmod +x "${OUTPUT_FILE}"
 }
@@ -136,7 +141,7 @@ SPEEDTEST_REPO="sivel/speedtest-cli"
 SPEEDTEST_ASSET="speedtest.py"
 if ! [ -e ${SPEEDTEST_BIN} ]; then
     echo "Installing SpeedTest CLI..."
-    downloadLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}"
+    downloadLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
 else
     echo "SpeedTest CLI already installed."
 fi
