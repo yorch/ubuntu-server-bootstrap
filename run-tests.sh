@@ -13,7 +13,7 @@ for base_image in "${BASE_IMAGES[@]}"; do
     docker build \
         --progress=plain \
         --build-arg BASE_IMAGE=${base_image} \
-        -t ${IMAGE_TAG_BASE}-${BASE_IMAGE} \
+        -t "${IMAGE_TAG_BASE}-${base_image}" \
         -f ${DOCKERFILE} \
         .
 done
