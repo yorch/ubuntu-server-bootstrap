@@ -161,12 +161,31 @@ fi
 # Install ZSH and Prezto
 # https://github.com/sorin-ionescu/prezto
 echo "Installing ZSH and Prezto..."
-ZPREZTO_SETUP_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/setup-prezto.sh"
 ${APT_INSTALL} zsh
-${CURL_CMD} "${ZPREZTO_SETUP_URL}" | zsh
-chsh -s /bin/zsh
+ZSH_BIN=$(command -v zsh)
+PREZTO_DIR="${HOME}/.zprezto"
+PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/.zpreztorc"
+PREZTO_REPO_URL="https://github.com/sorin-ionescu/prezto.git"
 
-# Install SpaceVim
+if [ -x "${ZSH_BIN}" ]; then
+    if ! [ -d "${PREZTO_DIR}" ]; then
+        git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}"
+        ${CURL_CMD} "${PREZTORC_URL}" -o "${PREZTO_DIR}/runcoms/zpreztorc"
+        ${ZSH_BIN} -c "
+            setopt EXTENDED_GLOB
+            for rcfile in \"\${HOME}\"/.zprezto/runcoms/^README.md(.N); do
+                echo \"\${rcfile}\"
+                ln -s \"\$rcfile\" \"\${HOME}/.\${rcfile:t}\"
+            done"
+        chsh -s /bin/zsh
+    else
+        echo "Prezto already installed."
+    fi
+else
+    echo "ERROR - Could not find ZSH even though we tried to install it"
+fi
+
+# Install or update SpaceVim
 ${CURL_CMD} https://spacevim.org/install.sh | bash
 
 # Cleanup old packages
