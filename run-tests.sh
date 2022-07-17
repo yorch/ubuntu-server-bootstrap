@@ -6,7 +6,7 @@ BASE_IMAGES=(
     "ubuntu:22.04"
 )
 IMAGE_TAG=server-simple-setup
-DOCKERFILE="tests/Dockerfile"
+DOCKERFILE="Dockerfile.test"
 
 for base_image in "${BASE_IMAGES[@]}"; do
     echo "Running tests with ${base_image}"
