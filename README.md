@@ -46,13 +46,15 @@ At the minimum, you should log out and log in again so `zsh` gets activated on y
 
 ## Docker
 
-You can test or use this script with Docker by running:
+You can test or use this script with Docker.
+
+First, build the image with:
 
 ```sh
 docker build -t bootstrapped-ubuntu .
 ```
 
-And then run it:
+And finally, run it in interactive mode with:
 
 ```sh
 docker run -it bootstrapped-ubuntu
