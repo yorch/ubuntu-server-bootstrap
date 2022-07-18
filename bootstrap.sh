@@ -3,8 +3,8 @@
 # End script if there is an error
 # -e Exit immediately if a command exits with a non-zero status.
 # -x Print commands and their arguments as they are executed.
-# set -ex # Use for debugging
-set -e
+set -ex # Use for debugging
+# set -e
 
 # keep track of the last executed command
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
@@ -103,7 +103,7 @@ if ! [ -e "$(command -v docker)" ]; then
         gnupg-agent \
         software-properties-common \
         &>> ${LOG_FILE}
-    ${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add - &>> ${LOG_FILE}
+    (${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add -) &>> ${LOG_FILE}
     apt-key fingerprint 0EBFCD88 &>> ${LOG_FILE}
     add-apt-repository \
         "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
@@ -149,14 +149,18 @@ else
 fi
 
 # NeoVim
-log "Installing NeoVim..."
-# Adds repo for latest neovim version
-add-apt-repository -y ppa:neovim-ppa/stable &>> ${LOG_FILE}
-${APT_UPDATE} &>> ${LOG_FILE}
-${APT_INSTALL} neovim &>> ${LOG_FILE}
-# Set neovim as default vim
-update-alternatives --set vi $(which nvim) &>> ${LOG_FILE}
-update-alternatives --set vim $(which nvim) &>> ${LOG_FILE}
+if ! [ -e "$(command -v nvim)" ]; then
+    log "Installing NeoVim..."
+    # Adds repo for latest neovim version
+    add-apt-repository -y ppa:neovim-ppa/stable &>> ${LOG_FILE}
+    ${APT_UPDATE} &>> ${LOG_FILE}
+    ${APT_INSTALL} neovim &>> ${LOG_FILE}
+    # Set neovim as default vim
+    update-alternatives --set vi $(which nvim) &>> ${LOG_FILE}
+    update-alternatives --set vim $(which nvim) &>> ${LOG_FILE}
+else
+    log "NeoVim already installed."
+fi
 
 # SpeedTest
 # https://github.com/sivel/speedtest-cli
@@ -212,7 +216,7 @@ fi
 # SpaceVim
 log "Installing or updating SpaceVim..."
 ${APT_INSTALL} fontconfig &>> ${LOG_FILE}
-${CURL_CMD} https://spacevim.org/install.sh | bash
+(${CURL_CMD} https://spacevim.org/install.sh | bash) &>> ${LOG_FILE}
 
 # Enable multiplexer `byobu`
 # byobu-enable
@@ -225,7 +229,7 @@ ${APT_AUTOREMOVE} &>> ${LOG_FILE}
 log "Cleanup caches..."
 ${APT_CMD} clean &>> ${LOG_FILE}
 
-echo
+echo "-----------------------------------------------------------------------------------------------------"
 log "All Done! You should restart the machine now!"
 log "A log file is available at ${LOG_FILE}"
-echo ""
+echo "-----------------------------------------------------------------------------------------------------"
