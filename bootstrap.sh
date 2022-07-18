@@ -55,7 +55,7 @@ function downloadLatestRelease {
 }
 
 # Update all current packages
-${APT_UPDATE} && ${APT_CMD} upgrade && ${APT_AUTOREMOVE} &> ${APT_LOG_FILE}
+${APT_UPDATE} && ${APT_CMD} upgrade && ${APT_AUTOREMOVE} &>> ${APT_LOG_FILE}
 
 # Timezone
 TIMEDATECTL=timedatectl
@@ -66,7 +66,7 @@ fi
 # Locales
 LOCALE_GEN=locale-gen
 if ! command -v "${LOCALE_GEN}"; then
-  ${APT_INSTALL} locales &> ${APT_LOG_FILE}
+  ${APT_INSTALL} locales &>> ${APT_LOG_FILE}
 fi
 locale-gen ${LOCALES[@]}
 
@@ -80,7 +80,7 @@ ${APT_INSTALL} \
     tig \
     vim \
     wget \
-    &> ${APT_LOG_FILE}
+    &>> ${APT_LOG_FILE}
 
 # Install latest Docker version
 echo "Installing Docker..."
@@ -89,20 +89,20 @@ ${APT_INSTALL} \
     ca-certificates \
     gnupg-agent \
     software-properties-common \
-    &> ${APT_LOG_FILE}
+    &>> ${APT_LOG_FILE}
 ${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-apt-key fingerprint 0EBFCD88 &> ${APT_LOG_FILE}
+apt-key fingerprint 0EBFCD88 &>> ${APT_LOG_FILE}
 add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
    $(lsb_release -cs) \
    stable" \
-   &> ${APT_LOG_FILE}
+   &>> ${APT_LOG_FILE}
 ${APT_UPDATE} && ${APT_INSTALL} \
     docker-ce \
     docker-ce-cli \
     containerd.io \
     docker-compose-plugin \
-    &> ${APT_LOG_FILE}
+    &>> ${APT_LOG_FILE}
 
 # Install Docker Compose
 # https://github.com/docker/compose
@@ -136,7 +136,7 @@ fi
 # Install NeoVim
 # Adds repo for latest neovim version
 add-apt-repository -y ppa:neovim-ppa/stable
-${APT_UPDATE} && ${APT_INSTALL} neovim &> ${APT_LOG_FILE}
+${APT_UPDATE} && ${APT_INSTALL} neovim &>> ${APT_LOG_FILE}
 # Set neovim as default vim
 update-alternatives --set vi $(which nvim)
 update-alternatives --set vim $(which nvim)
@@ -167,7 +167,7 @@ fi
 # Install ZSH and Prezto
 # https://github.com/sorin-ionescu/prezto
 echo "Installing ZSH and Prezto..."
-${APT_INSTALL} zsh &> ${APT_LOG_FILE}
+${APT_INSTALL} zsh &>> ${APT_LOG_FILE}
 ZSH_BIN=$(command -v zsh)
 PREZTO_DIR="${HOME}/.zprezto"
 PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/.zpreztorc"
@@ -198,10 +198,11 @@ ${CURL_CMD} https://spacevim.org/install.sh | bash
 # byobu-enable
 
 # Cleanup old packages
-${APT_AUTOREMOVE} &> ${APT_LOG_FILE}
+${APT_AUTOREMOVE} &>> ${APT_LOG_FILE}
 # Cleanup caches
-${APT_CMD} clean &> ${APT_LOG_FILE}
+${APT_CMD} clean &>> ${APT_LOG_FILE}
 
 echo
 echo "All Done! You should restart the machine now!"
+echo "A log file is available at ${APT_LOG_FILE}"
 echo
