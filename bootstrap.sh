@@ -170,11 +170,11 @@ fi
 log "Making sure `python` exists..."
 PYTHON_BIN=/usr/bin/python
 if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
-    log "Python is not installed, trying to symlink python3..."
-    if [ -x "$(command -v python3)" ]; then
-        PYTHON3_BIN=$(command -v python3)
-        log "Symlinking python3 (${PYTHON3_BIN}) to python (${PYTHON_BIN})..."
-        ln -s ${PYTHON3_BIN} ${PYTHON_BIN}
+    log "Python is not installed"
+    PYTHON3_BIN=$(command -v python3)
+    if [ -x "${PYTHON3_BIN}" ]; then
+        log "Symlinking python3 (${PYTHON3_BIN}) to (${PYTHON_BIN})..."
+        ln -s "${PYTHON3_BIN}" "${PYTHON_BIN}"
     fi
 fi
 
@@ -195,7 +195,8 @@ if [ -x "${ZSH_BIN}" ]; then
             setopt EXTENDED_GLOB
             for rcfile in \"\${HOME}\"/.zprezto/runcoms/^README.md(.N); do
                 ln -s \"\$rcfile\" \"\${HOME}/.\${rcfile:t}\"
-            done"
+            done
+        "
         chsh -s /bin/zsh
     else
         log "Prezto already installed."
