@@ -170,7 +170,7 @@ fi
 log "Making sure `python` exists..."
 PYTHON_BIN=/usr/bin/python
 if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
-    log "Python is not installed"
+    log "Python is not installed."
     PYTHON3_BIN=$(command -v python3)
     if [ -x "${PYTHON3_BIN}" ]; then
         log "Symlinking python3 (${PYTHON3_BIN}) to (${PYTHON_BIN})..."
