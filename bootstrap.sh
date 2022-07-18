@@ -95,27 +95,31 @@ ${APT_INSTALL} \
     &>> ${LOG_FILE}
 
 # Install latest Docker version
-log "Installing Docker..."
-${APT_INSTALL} \
-    apt-transport-https \
-    ca-certificates \
-    gnupg-agent \
-    software-properties-common \
-    &>> ${LOG_FILE}
-${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add - &>> ${LOG_FILE}
-apt-key fingerprint 0EBFCD88 &>> ${LOG_FILE}
-add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable" \
-   &>> ${LOG_FILE}
-${APT_UPDATE} &>> ${LOG_FILE}
-${APT_INSTALL} \
-    docker-ce \
-    docker-ce-cli \
-    containerd.io \
-    docker-compose-plugin \
-    &>> ${LOG_FILE}
+if ! [ -e "$(command -v docker)" ]; then
+    log "Installing Docker..."
+    ${APT_INSTALL} \
+        apt-transport-https \
+        ca-certificates \
+        gnupg-agent \
+        software-properties-common \
+        &>> ${LOG_FILE}
+    ${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add - &>> ${LOG_FILE}
+    apt-key fingerprint 0EBFCD88 &>> ${LOG_FILE}
+    add-apt-repository \
+        "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+        $(lsb_release -cs) \
+        stable" \
+        &>> ${LOG_FILE}
+    ${APT_UPDATE} &>> ${LOG_FILE}
+    ${APT_INSTALL} \
+        docker-ce \
+        docker-ce-cli \
+        containerd.io \
+        docker-compose-plugin \
+        &>> ${LOG_FILE}
+else
+    log "Docker already installed."
+fi
 
 # Docker Compose
 # https://github.com/docker/compose
