@@ -3,8 +3,8 @@
 # End script if there is an error
 # -e Exit immediately if a command exits with a non-zero status.
 # -x Print commands and their arguments as they are executed.
-set -ex # Use for debugging
-# set -e
+# set -ex # Use for debugging
+set -e
 
 # keep track of the last executed command
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
