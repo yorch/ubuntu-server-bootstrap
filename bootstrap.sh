@@ -171,7 +171,7 @@ else
 fi
 
 # Make sure `python` exists
-log "Making sure `python` exists..."
+log "Making sure python exists..."
 PYTHON_BIN=/usr/bin/python
 if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
     log "Python is not installed."
