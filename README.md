@@ -1,6 +1,6 @@
 # Ubuntu Server Bootstrap
 
-A straightforward script to setup base Ubuntu 18+ servers environment with:
+A slight opinionated and straightforward script to setup base Ubuntu 18+ servers environment with:
 
 - Docker CE
 - [Docker Compose v2](https://github.com/docker/compose)
@@ -8,11 +8,12 @@ A straightforward script to setup base Ubuntu 18+ servers environment with:
 - ZSH with [Prezto](https://github.com/sorin-ionescu/prezto)
 - Symlinks `python3` to `python` if `python` command is not found
 - Tools:
+  - [`byobu`](https://ubuntu.com/server/docs/tools-byobu): Enhancement to multiplexers like `screen` or `tmux`
   - `curl`
   - `git`
   - `htop`: Better `top`
   - `neovim`
-  - `tig`: CLI Git client
+  - [`tig`](https://jonas.github.io/tig/): CLI Git client
   - `vim`
   - `wget`
   - [SpaceVim](https://spacevim.org/)
@@ -46,15 +47,15 @@ At the minimum, you should log out and log in again so `zsh` gets activated on y
 
 ## Docker
 
-You can test or use this script with Docker.
+You can test or use this script with Docker. First clone this repo and follow the next steps.
 
-First, build the image with:
+Build the Docker image with:
 
 ```sh
 docker build -t bootstrapped-ubuntu .
 ```
 
-And finally, run it in interactive mode with:
+And finally, run it in interactive mode:
 
 ```sh
 docker run -it bootstrapped-ubuntu
