@@ -3,7 +3,8 @@
 # End script if there is an error
 # -e Exit immediately if a command exits with a non-zero status.
 # -x Print commands and their arguments as they are executed.
-set -ex
+# set -ex # Use for debugging
+set -e
 
 # keep track of the last executed command
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
@@ -21,6 +22,7 @@ APT_CMD="apt-get -qq" # -qq includes -y
 APT_UPDATE="${APT_CMD} update"
 APT_INSTALL="${APT_CMD} install"
 APT_AUTOREMOVE="${APT_CMD} autoremove"
+APT_LOG_FILE="apt-operations.log"
 USR_BIN_DIR=/usr/local/bin
 # -s, --silent        Silent mode
 # -S, --show-error    Show error even when -s is used
@@ -53,7 +55,7 @@ function downloadLatestRelease {
 }
 
 # Update all current packages
-${APT_UPDATE} && ${APT_CMD} upgrade && ${APT_AUTOREMOVE}
+${APT_UPDATE} && ${APT_CMD} upgrade && ${APT_AUTOREMOVE} &> ${APT_LOG_FILE}
 
 # Timezone
 TIMEDATECTL=timedatectl
@@ -64,7 +66,7 @@ fi
 # Locales
 LOCALE_GEN=locale-gen
 if ! command -v "${LOCALE_GEN}"; then
-  ${APT_INSTALL} locales
+  ${APT_INSTALL} locales &> ${APT_LOG_FILE}
 fi
 locale-gen ${LOCALES[@]}
 
@@ -77,7 +79,8 @@ ${APT_INSTALL} \
     silversearcher-ag \
     tig \
     vim \
-    wget
+    wget \
+    &> ${APT_LOG_FILE}
 
 # Install latest Docker version
 echo "Installing Docker..."
@@ -85,18 +88,21 @@ ${APT_INSTALL} \
     apt-transport-https \
     ca-certificates \
     gnupg-agent \
-    software-properties-common
+    software-properties-common \
+    &> ${APT_LOG_FILE}
 ${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-apt-key fingerprint 0EBFCD88
+apt-key fingerprint 0EBFCD88 &> ${APT_LOG_FILE}
 add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
    $(lsb_release -cs) \
-   stable"
+   stable" \
+   &> ${APT_LOG_FILE}
 ${APT_UPDATE} && ${APT_INSTALL} \
     docker-ce \
     docker-ce-cli \
     containerd.io \
-    docker-compose-plugin
+    docker-compose-plugin \
+    &> ${APT_LOG_FILE}
 
 # Install Docker Compose
 # https://github.com/docker/compose
@@ -130,7 +136,7 @@ fi
 # Install NeoVim
 # Adds repo for latest neovim version
 add-apt-repository -y ppa:neovim-ppa/stable
-${APT_UPDATE} && ${APT_INSTALL} neovim
+${APT_UPDATE} && ${APT_INSTALL} neovim &> ${APT_LOG_FILE}
 # Set neovim as default vim
 update-alternatives --set vi $(which nvim)
 update-alternatives --set vim $(which nvim)
@@ -161,7 +167,7 @@ fi
 # Install ZSH and Prezto
 # https://github.com/sorin-ionescu/prezto
 echo "Installing ZSH and Prezto..."
-${APT_INSTALL} zsh
+${APT_INSTALL} zsh &> ${APT_LOG_FILE}
 ZSH_BIN=$(command -v zsh)
 PREZTO_DIR="${HOME}/.zprezto"
 PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/.zpreztorc"
@@ -188,10 +194,13 @@ fi
 # Install or update SpaceVim
 ${CURL_CMD} https://spacevim.org/install.sh | bash
 
+# Enable multiplexer `byobu`
+# byobu-enable
+
 # Cleanup old packages
-${APT_AUTOREMOVE}
+${APT_AUTOREMOVE} &> ${APT_LOG_FILE}
 # Cleanup caches
-${APT_CMD} clean
+${APT_CMD} clean &> ${APT_LOG_FILE}
 
 echo
 echo "All Done! You should restart the machine now!"
