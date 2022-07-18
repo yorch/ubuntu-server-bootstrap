@@ -30,13 +30,15 @@ USR_BIN_DIR=/usr/local/bin
 CURL_CMD="curl -sSLf"
 
 # Utils
+function log() {
+    echo "$(date +'%Y-%m-%d %H:%M:%S') $@"
+}
 function getLatestRelease {
     local REPO="${1}"
     ${CURL_CMD} "https://api.github.com/repos/${REPO}/releases/latest" |
         grep '"tag_name":' |
         sed -E 's/.*"([^"]+)".*/\1/'
 }
-
 function downloadLatestRelease {
     local REPO="${1}"
     local ASSET_NAME="${2}"
@@ -48,22 +50,31 @@ function downloadLatestRelease {
     else
         local URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET_NAME}"
     fi
-    echo "Downloading from repo ${REPO} version ${VERSION} to file ${OUTPUT_FILE}"
+    log "Downloading from repo ${REPO} version ${VERSION} to file ${OUTPUT_FILE}"
     ${CURL_CMD} "${URL}" -o "${OUTPUT_FILE}"
     chmod +x "${OUTPUT_FILE}"
 }
 
+echo
+echo "-----------------------------------------------------------------------------------------------------"
+log "Starting $(echo $0), this will take a few minutes depending on your system."
+echo "-----------------------------------------------------------------------------------------------------"
+echo
+
 # Update all current packages
-${APT_UPDATE} && ${APT_CMD} upgrade && ${APT_AUTOREMOVE} &>> ${LOG_FILE}
+log "Upgrading existing packages..."
+${APT_UPDATE} &>> ${LOG_FILE}
+${APT_CMD} upgrade &>> ${LOG_FILE}
+${APT_AUTOREMOVE} &>> ${LOG_FILE}
 
 # Timezone
-echo "Setting timezone to ${TIMEZONE}..."
+log "Setting timezone to ${TIMEZONE}..."
 if [ -x "$(command -v timedatectl)" ]; then
   timedatectl set-timezone ${TIMEZONE} &>> ${LOG_FILE}
 fi
 
 # Locales
-echo "Setting locales to ${LOCALES[*]}..."
+log "Setting locales to ${LOCALES[*]}..."
 LOCALE_GEN=locale-gen
 if ! [ -x "$(command -v ${LOCALE_GEN})" ]; then
   ${APT_INSTALL} locales &>> ${LOG_FILE}
@@ -71,7 +82,7 @@ fi
 ${LOCALE_GEN} ${LOCALES[@]} &>> ${LOG_FILE}
 
 # Tools
-echo "Installing tools..."
+log "Installing tools..."
 ${APT_INSTALL} \
     byobu \
     curl \
@@ -84,21 +95,22 @@ ${APT_INSTALL} \
     &>> ${LOG_FILE}
 
 # Install latest Docker version
-echo "Installing Docker..."
+log "Installing Docker..."
 ${APT_INSTALL} \
     apt-transport-https \
     ca-certificates \
     gnupg-agent \
     software-properties-common \
     &>> ${LOG_FILE}
-${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add - \&>> ${LOG_FILE}
+${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add - &>> ${LOG_FILE}
 apt-key fingerprint 0EBFCD88 &>> ${LOG_FILE}
 add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
    $(lsb_release -cs) \
    stable" \
    &>> ${LOG_FILE}
-${APT_UPDATE} && ${APT_INSTALL} \
+${APT_UPDATE} &>> ${LOG_FILE}
+${APT_INSTALL} \
     docker-ce \
     docker-ce-cli \
     containerd.io \
@@ -113,11 +125,10 @@ DOCKER_COMPOSE_REPO="docker/compose"
 DOCKER_COMPOSE_ASSET="docker-compose-linux-$(uname -m)"
 if ! [ -e "${DOCKER_COMPOSE_BIN}" ]; then
     mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
-    echo "Installing Docker Compose..."
+    log "Installing Docker Compose..."
     downloadLatestRelease "${DOCKER_COMPOSE_REPO}" "${DOCKER_COMPOSE_ASSET}" "${DOCKER_COMPOSE_BIN}"
-    echo "Docker Compose installed."
 else
-    echo "Docker Compose already installed."
+    log "Docker Compose already installed."
 fi
 
 # Docker Compose Switch (to ease transition from Docker Compose v1)
@@ -125,19 +136,20 @@ DOCKER_COMPOSE_SWITCH_BIN="${USR_BIN_DIR}/compose-switch"
 DOCKER_COMPOSE_SWITCH_REPO="docker/compose-switch"
 DOCKER_COMPOSE_SWITCH_ASSET="docker-compose-linux-amd64"
 if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
-    echo "Installing Docker Switch..."
+    log "Installing Docker Switch..."
     downloadLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
     # Set Docker Compose Switch to replace Docker Compose v1
     update-alternatives --install ${USR_BIN_DIR}/docker-compose docker-compose "${DOCKER_COMPOSE_SWITCH_BIN}" 99 &>> ${LOG_FILE}
-    echo "Docker Switch installed."
 else
-    echo "Docker Switch already installed."
+    log "Docker Switch already installed."
 fi
 
 # NeoVim
+log "Installing NeoVim..."
 # Adds repo for latest neovim version
 add-apt-repository -y ppa:neovim-ppa/stable &>> ${LOG_FILE}
-${APT_UPDATE} && ${APT_INSTALL} neovim &>> ${LOG_FILE}
+${APT_UPDATE} &>> ${LOG_FILE}
+${APT_INSTALL} neovim &>> ${LOG_FILE}
 # Set neovim as default vim
 update-alternatives --set vi $(which nvim) &>> ${LOG_FILE}
 update-alternatives --set vim $(which nvim) &>> ${LOG_FILE}
@@ -148,26 +160,27 @@ SPEEDTEST_BIN="${USR_BIN_DIR}/speedtest-cli"
 SPEEDTEST_REPO="sivel/speedtest-cli"
 SPEEDTEST_ASSET="speedtest.py"
 if ! [ -e ${SPEEDTEST_BIN} ]; then
-    echo "Installing SpeedTest CLI..."
+    log "Installing SpeedTest CLI..."
     downloadLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
 else
-    echo "SpeedTest CLI already installed."
+    log "SpeedTest CLI already installed."
 fi
 
 # Make sure `python` exists
+log "Making sure `python` exists..."
 PYTHON_BIN=/usr/bin/python
 if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
-    echo "Python is not installed, trying to symlink python3..."
+    log "Python is not installed, trying to symlink python3..."
     if [ -x "$(command -v python3)" ]; then
         PYTHON3_BIN=$(command -v python3)
-        echo "Symlinking python3 (${PYTHON3_BIN}) to python (${PYTHON_BIN})..."
+        log "Symlinking python3 (${PYTHON3_BIN}) to python (${PYTHON_BIN})..."
         ln -s ${PYTHON3_BIN} ${PYTHON_BIN}
     fi
 fi
 
 # ZSH and Prezto
 # https://github.com/sorin-ionescu/prezto
-echo "Installing ZSH and Prezto..."
+log "Installing ZSH and Prezto..."
 ${APT_INSTALL} zsh &>> ${LOG_FILE}
 ZSH_BIN=$(command -v zsh)
 PREZTO_DIR="${HOME}/.zprezto"
@@ -181,19 +194,18 @@ if [ -x "${ZSH_BIN}" ]; then
         ${ZSH_BIN} -c "
             setopt EXTENDED_GLOB
             for rcfile in \"\${HOME}\"/.zprezto/runcoms/^README.md(.N); do
-                echo \"\${rcfile}\"
                 ln -s \"\$rcfile\" \"\${HOME}/.\${rcfile:t}\"
             done"
         chsh -s /bin/zsh
     else
-        echo "Prezto already installed."
+        log "Prezto already installed."
     fi
 else
-    echo "ERROR - Could not find ZSH even though we tried to install it"
+    log "ERROR - Could not find ZSH even though we tried to install it"
 fi
 
 # SpaceVim
-echo "Installing or updating SpaceVim..."
+log "Installing or updating SpaceVim..."
 ${APT_INSTALL} fontconfig &>> ${LOG_FILE}
 ${CURL_CMD} https://spacevim.org/install.sh | bash
 
@@ -201,14 +213,14 @@ ${CURL_CMD} https://spacevim.org/install.sh | bash
 # byobu-enable
 
 # Cleanup old packages
-echo "Cleaning up old packages..."
+log "Cleaning up old packages..."
 ${APT_AUTOREMOVE} &>> ${LOG_FILE}
 
 # Cleanup caches
-echo "Cleanup caches..."
+log "Cleanup caches..."
 ${APT_CMD} clean &>> ${LOG_FILE}
 
 echo
-echo "All Done! You should restart the machine now!"
-echo "A log file is available at ${LOG_FILE}"
-echo
+log "All Done! You should restart the machine now!"
+log "A log file is available at ${LOG_FILE}"
+echo ""
