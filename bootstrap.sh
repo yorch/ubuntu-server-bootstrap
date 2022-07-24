@@ -6,10 +6,12 @@
 # set -ex # Use for debugging
 set -e
 
+LOG_FILE="bootstrap_$(date +'%Y%m%d%H%M%S').log"
+
 # keep track of the last executed command
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 # echo an error message before exiting
-trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
+trap 'echo "\"${last_command}\" command filed with exit code $?. See log file ${LOG_FILE}"' EXIT
 
 # Config
 TIMEZONE=America/New_York
@@ -21,7 +23,7 @@ APT_CMD="apt-get -qq" # -qq includes -y
 APT_UPDATE="${APT_CMD} update"
 APT_INSTALL="${APT_CMD} install"
 APT_AUTOREMOVE="${APT_CMD} autoremove"
-LOG_FILE="bootstrap_$(date +'%Y%m%d%H%M%S').log"
+
 USR_BIN_DIR=/usr/local/bin
 # -s, --silent        Silent mode
 # -S, --show-error    Show error even when -s is used
