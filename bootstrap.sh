@@ -11,7 +11,7 @@ LOG_FILE="bootstrap_$(date +'%Y%m%d%H%M%S').log"
 # keep track of the last executed command
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 # echo an error message before exiting
-trap 'echo "\"${last_command}\" command filed with exit code $?. See log file ${LOG_FILE}"' EXIT
+trap 'echo "\"${last_command}\" command failed with exit code $?. See log file ${LOG_FILE}"' EXIT
 
 # Config
 TIMEZONE=America/New_York
@@ -235,3 +235,5 @@ echo "--------------------------------------------------------------------------
 log "All Done! You should restart the machine now!"
 log "A log file is available at ${LOG_FILE}"
 echo "-----------------------------------------------------------------------------------------------------"
+
+exit 0
