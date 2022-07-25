@@ -21,10 +21,9 @@ LOCALES=(
     "en_US.UTF-8"
 )
 
-APT_CMD="apt-get -qq" # -qq includes -y
-APT_UPDATE="${APT_CMD} update"
+# APT_CMD="apt-get -qq" # -qq includes -y
+APT_CMD="apt-get -y" # -qq includes -y
 APT_INSTALL="${APT_CMD} install"
-APT_AUTOREMOVE="${APT_CMD} autoremove"
 
 USR_BIN_DIR=/usr/local/bin
 # -s, --silent        Silent mode
@@ -36,8 +35,11 @@ CURL_CMD="curl -sSLf"
 ###############################################################################
 # Utils
 ###############################################################################
+function currentDate() {
+    echo "$(date +'%Y-%m-%d %H:%M:%S')"
+}
 function log() {
-    echo "$(date +'%Y-%m-%d %H:%M:%S') $@"
+    echo "$(currentDate) - ${@}"
 }
 function logError() {
     local MESSAGE="${@}"
@@ -56,6 +58,14 @@ function catch() {
 }
 function interrupted() {
     echo "The script was interrupted, exiting"
+}
+function runCmdAndLog() {
+    local CMD="${@}"
+    echo "" &>> ${LOG_FILE}
+    echo "================================================================================" &>> ${LOG_FILE}
+    echo "$(currentDate) - Running command: ${CMD}" &>> ${LOG_FILE}
+    echo "================================================================================" &>> ${LOG_FILE}
+    eval "${CMD}" &>> ${LOG_FILE}
 }
 function getLatestRelease {
     local REPO="${1}"
@@ -85,33 +95,33 @@ function downloadLatestRelease {
 
 echo
 echo "-----------------------------------------------------------------------------------------------------"
-log "Starting $(echo $0), this will take a few minutes depending on your system."
+log "Starting $(echo ${0}), this will take a few minutes depending on your system."
 echo "-----------------------------------------------------------------------------------------------------"
 echo
 
 # Update all current packages
 log "Upgrading existing packages..."
-${APT_UPDATE} &>> ${LOG_FILE}
-${APT_CMD} upgrade &>> ${LOG_FILE}
-${APT_AUTOREMOVE} &>> ${LOG_FILE}
+runCmdAndLog ${APT_CMD} update
+runCmdAndLog ${APT_CMD} upgrade
+runCmdAndLog ${APT_CMD} autoremove
 
 # Timezone
 log "Setting timezone to ${TIMEZONE}..."
 if [ -x "$(command -v timedatectl)" ]; then
-  timedatectl set-timezone ${TIMEZONE} &>> ${LOG_FILE}
+  runCmdAndLog timedatectl set-timezone ${TIMEZONE}
 fi
 
 # Locales
 log "Setting locales to ${LOCALES[*]}..."
 LOCALE_GEN=locale-gen
 if ! [ -x "$(command -v ${LOCALE_GEN})" ]; then
-  ${APT_INSTALL} locales &>> ${LOG_FILE}
+  runCmdAndLog ${APT_INSTALL} locales
 fi
-${LOCALE_GEN} ${LOCALES[@]} &>> ${LOG_FILE}
+runCmdAndLog ${LOCALE_GEN} ${LOCALES[@]}
 
 # Tools
 log "Installing tools..."
-${APT_INSTALL} \
+runCmdAndLog ${APT_INSTALL} \
     byobu \
     curl \
     git \
@@ -119,32 +129,28 @@ ${APT_INSTALL} \
     silversearcher-ag \
     tig \
     vim \
-    wget \
-    &>> ${LOG_FILE}
+    wget
 
 # Install latest Docker version
 if ! [ -e "$(command -v docker)" ]; then
     log "Installing Docker..."
-    ${APT_INSTALL} \
+    runCmdAndLog ${APT_INSTALL} \
         apt-transport-https \
         ca-certificates \
         gnupg-agent \
-        software-properties-common \
-        &>> ${LOG_FILE}
-    (${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add -) &>> ${LOG_FILE}
-    apt-key fingerprint 0EBFCD88 &>> ${LOG_FILE}
-    add-apt-repository \
+        software-properties-common
+    runCmdAndLog "${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add -"
+    runCmdAndLog apt-key fingerprint 0EBFCD88
+    runCmdAndLog add-apt-repository -y \
         "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
         $(lsb_release -cs) \
-        stable" \
-        &>> ${LOG_FILE}
-    ${APT_UPDATE} &>> ${LOG_FILE}
-    ${APT_INSTALL} \
+        stable"
+    runCmdAndLog ${APT_CMD} update
+    runCmdAndLog ${APT_INSTALL} \
         docker-ce \
         docker-ce-cli \
         containerd.io \
-        docker-compose-plugin \
-        &>> ${LOG_FILE}
+        docker-compose-plugin
 else
     log "Docker already installed."
 fi
@@ -171,7 +177,11 @@ if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
     log "Installing Docker Switch..."
     downloadLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
     # Set Docker Compose Switch to replace Docker Compose v1
-    update-alternatives --install ${USR_BIN_DIR}/docker-compose docker-compose "${DOCKER_COMPOSE_SWITCH_BIN}" 99 &>> ${LOG_FILE}
+    runCmdAndLog update-alternatives \
+        --install ${USR_BIN_DIR}/docker-compose \
+        docker-compose \
+        "${DOCKER_COMPOSE_SWITCH_BIN}" \
+        99
 else
     log "Docker Switch already installed."
 fi
@@ -180,12 +190,12 @@ fi
 if ! [ -e "$(command -v nvim)" ]; then
     log "Installing NeoVim..."
     # Adds repo for latest neovim version
-    add-apt-repository -y ppa:neovim-ppa/stable &>> ${LOG_FILE}
-    ${APT_UPDATE} &>> ${LOG_FILE}
-    ${APT_INSTALL} neovim &>> ${LOG_FILE}
+    runCmdAndLog add-apt-repository -y ppa:neovim-ppa/stable
+    runCmdAndLog ${APT_CMD} update
+    runCmdAndLog ${APT_INSTALL} neovim
     # Set neovim as default vim
-    update-alternatives --set vi $(which nvim) &>> ${LOG_FILE}
-    update-alternatives --set vim $(which nvim) &>> ${LOG_FILE}
+    runCmdAndLog update-alternatives --set vi $(which nvim)
+    runCmdAndLog update-alternatives --set vim $(which nvim)
 else
     log "NeoVim already installed."
 fi
@@ -217,7 +227,7 @@ fi
 # ZSH and Prezto
 # https://github.com/sorin-ionescu/prezto
 log "Installing ZSH and Prezto..."
-${APT_INSTALL} zsh &>> ${LOG_FILE}
+runCmdAndLog ${APT_INSTALL} zsh
 ZSH_BIN=$(command -v zsh)
 PREZTO_DIR="${HOME}/.zprezto"
 PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/.zpreztorc"
@@ -225,7 +235,7 @@ PREZTO_REPO_URL="https://github.com/sorin-ionescu/prezto.git"
 
 if [ -x "${ZSH_BIN}" ]; then
     if ! [ -d "${PREZTO_DIR}" ]; then
-        git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}" &>> ${LOG_FILE}
+        runCmdAndLog git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}"
         ${CURL_CMD} "${PREZTORC_URL}" -o "${PREZTO_DIR}/runcoms/zpreztorc"
         ${ZSH_BIN} -c "
             setopt EXTENDED_GLOB
@@ -243,19 +253,19 @@ fi
 
 # SpaceVim
 log "Installing or updating SpaceVim..."
-${APT_INSTALL} fontconfig &>> ${LOG_FILE}
-(${CURL_CMD} https://spacevim.org/install.sh | bash) &>> ${LOG_FILE}
+runCmdAndLog ${APT_INSTALL} fontconfig
+runCmdAndLog "${CURL_CMD} https://spacevim.org/install.sh | bash"
 
 # Enable multiplexer `byobu`
 # byobu-enable
 
 # Cleanup old packages
 log "Cleaning up old packages..."
-${APT_AUTOREMOVE} &>> ${LOG_FILE}
+runCmdAndLog ${APT_CMD} autoremove
 
 # Cleanup caches
 log "Cleanup caches..."
-${APT_CMD} clean &>> ${LOG_FILE}
+runCmdAndLog ${APT_CMD} clean
 
 echo
 echo "-----------------------------------------------------------------------------------------------------"
