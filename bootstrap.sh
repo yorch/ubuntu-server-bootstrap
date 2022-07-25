@@ -3,24 +3,29 @@
 # End script if there is an error
 # -e Exit immediately if a command exits with a non-zero status.
 # -x Print commands and their arguments as they are executed.
-set -ex
+# set -eEx # Use for debugging
+set -eE # same as: `set -o errexit -o errtrace` (from: https://stackoverflow.com/a/35800451)
+
+LOG_FILE="bootstrap_$(date +'%Y%m%d%H%M%S').log"
 
 # keep track of the last executed command
-trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-# echo an error message before exiting
-trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
+trap 'last_command=${current_command}; current_command=${BASH_COMMAND}' DEBUG
+# Show an error message before exiting on error
+trap 'catch ${?} ${LINENO} ${last_command} ${LOG_FILE}' ERR
+# Show an error message when the script is interrupted
+trap 'interrupted' SIGINT
 
 # Config
 TIMEZONE=America/New_York
 LOCALES=(
     "en_US.UTF-8"
-    "en_CA.UTF-8"
 )
 
 APT_CMD="apt-get -qq" # -qq includes -y
 APT_UPDATE="${APT_CMD} update"
 APT_INSTALL="${APT_CMD} install"
 APT_AUTOREMOVE="${APT_CMD} autoremove"
+
 USR_BIN_DIR=/usr/local/bin
 # -s, --silent        Silent mode
 # -S, --show-error    Show error even when -s is used
@@ -28,14 +33,36 @@ USR_BIN_DIR=/usr/local/bin
 # -f, --fail          Fail silently (no output at all) on HTTP errors
 CURL_CMD="curl -sSLf"
 
+###############################################################################
 # Utils
+###############################################################################
+function log() {
+    echo "$(date +'%Y-%m-%d %H:%M:%S') $@"
+}
+function logError() {
+    local MESSAGE="${@}"
+    printf "\e[31mERROR - %s\e[m\n" "${MESSAGE}"
+}
+function catch() {
+    local ERROR_CODE="${1}"
+    local LINE_NUMBER="${2}"
+    local LAST_CMD="${3}"
+    local LOG_FILE="${4}"
+    echo
+    # echo "Error ${ERROR_CODE} occurred on line ${LINE_NUMBER}"
+    logError "\"${last_command}\" command failed with exit code ${ERROR_CODE} on line ${LINE_NUMBER}."
+    logError "See log file ${LOG_FILE} for more information."
+    echo
+}
+function interrupted() {
+    echo "The script was interrupted, exiting"
+}
 function getLatestRelease {
     local REPO="${1}"
     ${CURL_CMD} "https://api.github.com/repos/${REPO}/releases/latest" |
         grep '"tag_name":' |
         sed -E 's/.*"([^"]+)".*/\1/'
 }
-
 function downloadLatestRelease {
     local REPO="${1}"
     local ASSET_NAME="${2}"
@@ -47,28 +74,43 @@ function downloadLatestRelease {
     else
         local URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET_NAME}"
     fi
-    echo "Downloading from repo ${REPO} version ${VERSION} to file ${OUTPUT_FILE}"
+    log "Downloading from repo ${REPO} version ${VERSION} to file ${OUTPUT_FILE}"
     ${CURL_CMD} "${URL}" -o "${OUTPUT_FILE}"
     chmod +x "${OUTPUT_FILE}"
 }
 
+###############################################################################
+# Script
+###############################################################################
+
+echo
+echo "-----------------------------------------------------------------------------------------------------"
+log "Starting $(echo $0), this will take a few minutes depending on your system."
+echo "-----------------------------------------------------------------------------------------------------"
+echo
+
 # Update all current packages
-${APT_UPDATE} && ${APT_CMD} upgrade && ${APT_AUTOREMOVE}
+log "Upgrading existing packages..."
+${APT_UPDATE} &>> ${LOG_FILE}
+${APT_CMD} upgrade &>> ${LOG_FILE}
+${APT_AUTOREMOVE} &>> ${LOG_FILE}
 
 # Timezone
-TIMEDATECTL=timedatectl
-if command -v "${TIMEDATECTL}"; then
-  ${TIMEDATECTL} set-timezone ${TIMEZONE}
+log "Setting timezone to ${TIMEZONE}..."
+if [ -x "$(command -v timedatectl)" ]; then
+  timedatectl set-timezone ${TIMEZONE} &>> ${LOG_FILE}
 fi
 
 # Locales
+log "Setting locales to ${LOCALES[*]}..."
 LOCALE_GEN=locale-gen
-if ! command -v "${LOCALE_GEN}"; then
-  ${APT_INSTALL} locales
+if ! [ -x "$(command -v ${LOCALE_GEN})" ]; then
+  ${APT_INSTALL} locales &>> ${LOG_FILE}
 fi
-locale-gen ${LOCALES[@]}
+${LOCALE_GEN} ${LOCALES[@]} &>> ${LOG_FILE}
 
 # Tools
+log "Installing tools..."
 ${APT_INSTALL} \
     byobu \
     curl \
@@ -77,28 +119,37 @@ ${APT_INSTALL} \
     silversearcher-ag \
     tig \
     vim \
-    wget
+    wget \
+    &>> ${LOG_FILE}
 
 # Install latest Docker version
-echo "Installing Docker..."
-${APT_INSTALL} \
-    apt-transport-https \
-    ca-certificates \
-    gnupg-agent \
-    software-properties-common
-${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-apt-key fingerprint 0EBFCD88
-add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
-${APT_UPDATE} && ${APT_INSTALL} \
-    docker-ce \
-    docker-ce-cli \
-    containerd.io \
-    docker-compose-plugin
+if ! [ -e "$(command -v docker)" ]; then
+    log "Installing Docker..."
+    ${APT_INSTALL} \
+        apt-transport-https \
+        ca-certificates \
+        gnupg-agent \
+        software-properties-common \
+        &>> ${LOG_FILE}
+    (${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add -) &>> ${LOG_FILE}
+    apt-key fingerprint 0EBFCD88 &>> ${LOG_FILE}
+    add-apt-repository \
+        "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+        $(lsb_release -cs) \
+        stable" \
+        &>> ${LOG_FILE}
+    ${APT_UPDATE} &>> ${LOG_FILE}
+    ${APT_INSTALL} \
+        docker-ce \
+        docker-ce-cli \
+        containerd.io \
+        docker-compose-plugin \
+        &>> ${LOG_FILE}
+else
+    log "Docker already installed."
+fi
 
-# Install Docker Compose
+# Docker Compose
 # https://github.com/docker/compose
 DOCKER_CLI_PLUGINS_DIR="/usr/local/lib/docker/cli-plugins"
 DOCKER_COMPOSE_BIN="${DOCKER_CLI_PLUGINS_DIR}/docker-compose"
@@ -106,62 +157,67 @@ DOCKER_COMPOSE_REPO="docker/compose"
 DOCKER_COMPOSE_ASSET="docker-compose-linux-$(uname -m)"
 if ! [ -e "${DOCKER_COMPOSE_BIN}" ]; then
     mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
-    echo "Installing Docker Compose..."
+    log "Installing Docker Compose..."
     downloadLatestRelease "${DOCKER_COMPOSE_REPO}" "${DOCKER_COMPOSE_ASSET}" "${DOCKER_COMPOSE_BIN}"
-    echo "Docker Compose installed."
 else
-    echo "Docker Compose already installed."
+    log "Docker Compose already installed."
 fi
 
-# Install Docker Compose Switch (to ease transition from Docker Compose v1)
+# Docker Compose Switch (to ease transition from Docker Compose v1)
 DOCKER_COMPOSE_SWITCH_BIN="${USR_BIN_DIR}/compose-switch"
 DOCKER_COMPOSE_SWITCH_REPO="docker/compose-switch"
 DOCKER_COMPOSE_SWITCH_ASSET="docker-compose-linux-amd64"
 if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
-    echo "Installing Docker Switch..."
+    log "Installing Docker Switch..."
     downloadLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
     # Set Docker Compose Switch to replace Docker Compose v1
-    update-alternatives --install ${USR_BIN_DIR}/docker-compose docker-compose "${DOCKER_COMPOSE_SWITCH_BIN}" 99
-    echo "Docker Switch installed."
+    update-alternatives --install ${USR_BIN_DIR}/docker-compose docker-compose "${DOCKER_COMPOSE_SWITCH_BIN}" 99 &>> ${LOG_FILE}
 else
-    echo "Docker Switch already installed."
+    log "Docker Switch already installed."
 fi
 
-# Install NeoVim
-# Adds repo for latest neovim version
-add-apt-repository -y ppa:neovim-ppa/stable
-${APT_UPDATE} && ${APT_INSTALL} neovim
-# Set neovim as default vim
-update-alternatives --set vi $(which nvim)
-update-alternatives --set vim $(which nvim)
+# NeoVim
+if ! [ -e "$(command -v nvim)" ]; then
+    log "Installing NeoVim..."
+    # Adds repo for latest neovim version
+    add-apt-repository -y ppa:neovim-ppa/stable &>> ${LOG_FILE}
+    ${APT_UPDATE} &>> ${LOG_FILE}
+    ${APT_INSTALL} neovim &>> ${LOG_FILE}
+    # Set neovim as default vim
+    update-alternatives --set vi $(which nvim) &>> ${LOG_FILE}
+    update-alternatives --set vim $(which nvim) &>> ${LOG_FILE}
+else
+    log "NeoVim already installed."
+fi
 
-# Install SpeedTest
+# SpeedTest
 # https://github.com/sivel/speedtest-cli
 SPEEDTEST_BIN="${USR_BIN_DIR}/speedtest-cli"
 SPEEDTEST_REPO="sivel/speedtest-cli"
 SPEEDTEST_ASSET="speedtest.py"
 if ! [ -e ${SPEEDTEST_BIN} ]; then
-    echo "Installing SpeedTest CLI..."
+    log "Installing SpeedTest CLI..."
     downloadLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
 else
-    echo "SpeedTest CLI already installed."
+    log "SpeedTest CLI already installed."
 fi
 
 # Make sure `python` exists
+log "Making sure python exists..."
 PYTHON_BIN=/usr/bin/python
 if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
-    echo "Python is not installed, trying to symlink python3..."
-    if [ -x "$(command -v python3)" ]; then
-        PYTHON3_BIN=$(command -v python3)
-        echo "Symlinking python3 (${PYTHON3_BIN}) to python (${PYTHON_BIN})..."
-        ln -s ${PYTHON3_BIN} ${PYTHON_BIN}
+    log "Python is not installed."
+    PYTHON3_BIN=$(command -v python3)
+    if [ -x "${PYTHON3_BIN}" ]; then
+        log "Symlinking python3 (${PYTHON3_BIN}) to (${PYTHON_BIN})..."
+        ln -s "${PYTHON3_BIN}" "${PYTHON_BIN}"
     fi
 fi
 
-# Install ZSH and Prezto
+# ZSH and Prezto
 # https://github.com/sorin-ionescu/prezto
-echo "Installing ZSH and Prezto..."
-${APT_INSTALL} zsh
+log "Installing ZSH and Prezto..."
+${APT_INSTALL} zsh &>> ${LOG_FILE}
 ZSH_BIN=$(command -v zsh)
 PREZTO_DIR="${HOME}/.zprezto"
 PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/.zpreztorc"
@@ -169,30 +225,41 @@ PREZTO_REPO_URL="https://github.com/sorin-ionescu/prezto.git"
 
 if [ -x "${ZSH_BIN}" ]; then
     if ! [ -d "${PREZTO_DIR}" ]; then
-        git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}"
+        git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}" &>> ${LOG_FILE}
         ${CURL_CMD} "${PREZTORC_URL}" -o "${PREZTO_DIR}/runcoms/zpreztorc"
         ${ZSH_BIN} -c "
             setopt EXTENDED_GLOB
             for rcfile in \"\${HOME}\"/.zprezto/runcoms/^README.md(.N); do
-                echo \"\${rcfile}\"
                 ln -s \"\$rcfile\" \"\${HOME}/.\${rcfile:t}\"
-            done"
+            done
+        "
         chsh -s /bin/zsh
     else
-        echo "Prezto already installed."
+        log "Prezto already installed."
     fi
 else
-    echo "ERROR - Could not find ZSH even though we tried to install it"
+    log "ERROR - Could not find ZSH even though we tried to install it"
 fi
 
-# Install or update SpaceVim
-${CURL_CMD} https://spacevim.org/install.sh | bash
+# SpaceVim
+log "Installing or updating SpaceVim..."
+${APT_INSTALL} fontconfig &>> ${LOG_FILE}
+(${CURL_CMD} https://spacevim.org/install.sh | bash) &>> ${LOG_FILE}
+
+# Enable multiplexer `byobu`
+# byobu-enable
 
 # Cleanup old packages
-${APT_AUTOREMOVE}
+log "Cleaning up old packages..."
+${APT_AUTOREMOVE} &>> ${LOG_FILE}
+
 # Cleanup caches
-${APT_CMD} clean
+log "Cleanup caches..."
+${APT_CMD} clean &>> ${LOG_FILE}
 
 echo
-echo "All Done! You should restart the machine now!"
+echo "-----------------------------------------------------------------------------------------------------"
+log "All Done! You should restart the machine now!"
+log "A log file is available at ${LOG_FILE}"
+echo "-----------------------------------------------------------------------------------------------------"
 echo

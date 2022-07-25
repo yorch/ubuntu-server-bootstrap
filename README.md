@@ -1,6 +1,6 @@
 # Ubuntu Server Bootstrap
 
-A slight opinionated and straightforward script to setup base Ubuntu 18+ servers environment with:
+A slightly opinionated and straightforward script to setup base Ubuntu 18+ servers environment with:
 
 - Docker CE
 - [Docker Compose v2](https://github.com/docker/compose)
