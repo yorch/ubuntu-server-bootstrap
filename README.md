@@ -19,6 +19,10 @@ A slightly opinionated and straightforward script to setup base Ubuntu 18+ serve
   - [SpaceVim](https://spacevim.org/)
   - [SpeedTest CLI](https://github.com/sivel/speedtest-cli)
 
+> **This script is intended to be run as `root`**.
+>
+> When deploying a VPS in many providers (like Digital Ocean, Vultr, OVH, Contabo, etc), you will get the instance with only the `root` by default. Make sure to create a user for your daily use.
+
 It's tested with the following Ubuntu LTS versions:
 
 - `18.04`
