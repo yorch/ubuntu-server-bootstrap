@@ -3,15 +3,17 @@
 # End script if there is an error
 # -e Exit immediately if a command exits with a non-zero status.
 # -x Print commands and their arguments as they are executed.
-# set -ex # Use for debugging
-set -e
+# set -eEx # Use for debugging
+set -eE # same as: `set -o errexit -o errtrace` (from: https://stackoverflow.com/a/35800451)
 
 LOG_FILE="bootstrap_$(date +'%Y%m%d%H%M%S').log"
 
 # keep track of the last executed command
-trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-# echo an error message before exiting
-trap 'echo "\"${last_command}\" command failed with exit code $?. See log file ${LOG_FILE}"' EXIT
+trap 'last_command=${current_command}; current_command=${BASH_COMMAND}' DEBUG
+# Show an error message before exiting on error
+trap 'catch ${?} ${LINENO} ${last_command} ${LOG_FILE}' ERR
+# Show an error message when the script is interrupted
+trap 'interrupted' SIGINT
 
 # Config
 TIMEZONE=America/New_York
@@ -31,9 +33,29 @@ USR_BIN_DIR=/usr/local/bin
 # -f, --fail          Fail silently (no output at all) on HTTP errors
 CURL_CMD="curl -sSLf"
 
+###############################################################################
 # Utils
+###############################################################################
 function log() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') $@"
+}
+function logError() {
+    local MESSAGE="${@}"
+    printf "\e[31mERROR - %s\e[m\n" "${MESSAGE}"
+}
+function catch() {
+    local ERROR_CODE="${1}"
+    local LINE_NUMBER="${2}"
+    local LAST_CMD="${3}"
+    local LOG_FILE="${4}"
+    echo
+    # echo "Error ${ERROR_CODE} occurred on line ${LINE_NUMBER}"
+    logError "\"${last_command}\" command failed with exit code ${ERROR_CODE} on line ${LINE_NUMBER}."
+    logError "See log file ${LOG_FILE} for more information."
+    echo
+}
+function interrupted() {
+    echo "The script was interrupted, exiting"
 }
 function getLatestRelease {
     local REPO="${1}"
@@ -56,6 +78,10 @@ function downloadLatestRelease {
     ${CURL_CMD} "${URL}" -o "${OUTPUT_FILE}"
     chmod +x "${OUTPUT_FILE}"
 }
+
+###############################################################################
+# Script
+###############################################################################
 
 echo
 echo "-----------------------------------------------------------------------------------------------------"
