@@ -257,9 +257,9 @@ ${APT_AUTOREMOVE} &>> ${LOG_FILE}
 log "Cleanup caches..."
 ${APT_CMD} clean &>> ${LOG_FILE}
 
+echo
 echo "-----------------------------------------------------------------------------------------------------"
 log "All Done! You should restart the machine now!"
 log "A log file is available at ${LOG_FILE}"
 echo "-----------------------------------------------------------------------------------------------------"
-
-exit 0
+echo
