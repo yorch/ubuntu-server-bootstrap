@@ -135,16 +135,14 @@ runCmdAndLog ${APT_INSTALL} \
 if ! [ -e "$(command -v docker)" ]; then
     log "Installing Docker..."
     runCmdAndLog ${APT_INSTALL} \
-        apt-transport-https \
         ca-certificates \
-        gnupg-agent \
-        software-properties-common
-    runCmdAndLog "${CURL_CMD} https://download.docker.com/linux/ubuntu/gpg | apt-key add -"
-    runCmdAndLog apt-key fingerprint 0EBFCD88
-    runCmdAndLog add-apt-repository -y \
-        "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-        $(lsb_release -cs) \
-        stable"
+        gnupg \
+        lsb-release
+    runCmdAndLog mkdir -p /etc/apt/keyrings
+    runCmdAndLog "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
+    runCmdAndLog 'echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+        $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null'
     runCmdAndLog ${APT_CMD} update
     runCmdAndLog ${APT_INSTALL} \
         docker-ce \
