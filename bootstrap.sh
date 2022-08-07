@@ -127,6 +127,7 @@ runCmdAndLog ${APT_INSTALL} \
     git \
     htop \
     silversearcher-ag \
+    software-properties-common \
     tig \
     vim \
     wget
