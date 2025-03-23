@@ -170,6 +170,15 @@ function downloadLatestReleaseArtifact {
     ${CURL_CMD} "${URL}" -o "${OUTPUT_FILE}"
 }
 
+function getUbuntuVersion {
+    local VERSION=$(grep -oP '(?<=DISTRIB_RELEASE=)[0-9\.]+' /etc/lsb-release)
+    if [ -z "${VERSION}" ]; then
+        logError "Could not determine Ubuntu version. Please run this script on Ubuntu."
+        exit 1
+    fi
+    echo "${VERSION}"
+}
+
 ###############################################################################
 # Script
 ###############################################################################
@@ -185,11 +194,7 @@ if [ ! -f /etc/lsb-release ]; then
     exit 1
 fi
 # Check if the script is run on supported Ubuntu versions
-UBUNTU_VERSION=$(grep -oP '(?<=DISTRIB_RELEASE=)[0-9\.]+' /etc/lsb-release)
-if [ -z "${UBUNTU_VERSION}" ]; then
-    logError "Could not determine Ubuntu version. Please run this script on Ubuntu."
-    exit 1
-fi
+UBUNTU_VERSION=$(getUbuntuVersion)
 log "Running on Ubuntu ${UBUNTU_VERSION}"
 if [[ ! " ${UBUNTU_SUPPORTED_VERSIONS[@]} " =~ " ${UBUNTU_VERSION} " ]]; then
     logError "This script is only for Ubuntu ${UBUNTU_SUPPORTED_VERSIONS[*]}. Please run it on a supported version."
@@ -315,7 +320,7 @@ SPEEDTEST_REPO="sivel/speedtest-cli"
 SPEEDTEST_ASSET="speedtest.py"
 if ! [ -e ${SPEEDTEST_BIN} ]; then
     log "Installing SpeedTest CLI..."
-    downloadLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
+    downloadBinaryLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
 else
     log "SpeedTest CLI already installed."
 fi
