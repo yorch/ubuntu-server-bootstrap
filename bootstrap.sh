@@ -126,6 +126,7 @@ runCmdAndLog ${APT_INSTALL} \
     curl \
     git \
     htop \
+    ripgrep \
     silversearcher-ag \
     software-properties-common \
     tig \
