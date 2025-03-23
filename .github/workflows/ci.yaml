@@ -11,7 +11,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  tests:
+  test:
+    strategy:
+      matrix:
+        base_image:
+          - "ubuntu:20.04"
+          - "ubuntu:22.04"
+          - "ubuntu:24.04"
+
     runs-on: ubuntu-latest
 
     steps:
@@ -19,4 +26,5 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run tests
-        run: bash run-tests.sh
+        shell: bash
+        run: run-tests.sh ${matrix.base_image}
