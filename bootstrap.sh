@@ -235,6 +235,7 @@ runCmdAndLog ${LOCALE_GEN} ${LOCALES[@]}
 # Tools
 log "Installing tools..."
 runCmdAndLog ${APT_INSTALL} \
+    build-essential \
     byobu \
     curl \
     git \
@@ -244,7 +245,9 @@ runCmdAndLog ${APT_INSTALL} \
     software-properties-common \
     tig \
     vim \
-    wget
+    unzip \
+    wget \
+    zip
 
 # Install latest Docker version
 if ! [ -e "$(command -v docker)" ]; then
@@ -299,16 +302,38 @@ else
     log "Docker Switch already installed."
 fi
 
+# LazyGit
+if ! [ -e "$(command -v lazygit)" ]; then
+    log "Installing LazyGit..."
+    LAZYGIT_REPO="jesseduffield/lazygit"
+    LAZYGIT_TMP_FILE="/tmp/lazygit.tar.gz"
+    LAZYGIT_VERSION=$(getLatestReleaseForRepo ${LAZYGIT_REPO})
+    downloadLatestReleaseArtifact \
+        "${LAZYGIT_REPO}" \
+        "lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" \
+        "${LAZYGIT_TMP_FILE}"
+    runCmdAndLog tar xf ${LAZYGIT_TMP_FILE} /tmp/lazygit
+    runCmdAndLog install /tmp/lazygit -D -t /usr/local/bin/
+    runCmdAndLog rm -rf ${LAZYGIT_TMP_FILE} /tmp/lazygit
+    lazygit --version # TODO: Remove
+else
+    log "LazyGit already installed."
+fi
+
 # NeoVim
 if ! [ -e "$(command -v nvim)" ]; then
     log "Installing NeoVim..."
-    # Adds repo for latest neovim version
-    runCmdAndLog add-apt-repository -y ppa:neovim-ppa/stable
-    runCmdAndLog ${APT_CMD} update
-    runCmdAndLog ${APT_INSTALL} neovim
+    NVIM_TMP_FILE="/tmp/nvim.deb"
+    downloadLatestReleaseArtifact \
+        "neovim/neovim-releases" \
+        "nvim-linux-x86_64.deb" \
+        ${NVIM_TMP_FILE}
+    runCmdAndLog ${APT_INSTALL} "${NVIM_TMP_FILE}"
     # Set neovim as default vim
-    runCmdAndLog update-alternatives --set vi $(which nvim)
-    runCmdAndLog update-alternatives --set vim $(which nvim)
+    runCmdAndLog update-alternatives --install /usr/bin/vi vi $(which nvim) 60
+    runCmdAndLog update-alternatives --install /usr/bin/vim vim $(which nvim) 60
+    runCmdAndLog rm -f "${NVIM_TMP_FILE}"
+    nvim --version # TODO: Remove
 else
     log "NeoVim already installed."
 fi
