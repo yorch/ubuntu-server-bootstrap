@@ -308,9 +308,12 @@ if ! [ -e "$(command -v lazygit)" ]; then
     LAZYGIT_REPO="jesseduffield/lazygit"
     LAZYGIT_TMP_FILE="/tmp/lazygit.tar.gz"
     LAZYGIT_VERSION=$(getLatestReleaseForRepo ${LAZYGIT_REPO})
+    # Remove v from the start of the version string
+    LAZYGIT_VERSION=${LAZYGIT_VERSION#v}
+    LAZYGIT_ASSET="lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
     downloadLatestReleaseArtifact \
         "${LAZYGIT_REPO}" \
-        "lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" \
+        "${LAZYGIT_ASSET}" \
         "${LAZYGIT_TMP_FILE}"
     runCmdAndLog tar xf ${LAZYGIT_TMP_FILE} /tmp/lazygit
     runCmdAndLog install /tmp/lazygit -D -t /usr/local/bin/
