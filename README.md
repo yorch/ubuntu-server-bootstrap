@@ -25,9 +25,9 @@ A slightly opinionated and straightforward script to setup base Ubuntu 18+ serve
 
 It's tested with the following Ubuntu LTS versions:
 
-- `18.04`
 - `20.04`
 - `22.04`
+- `24.04`
 
 Although, most likely would work without problems in other Ubuntu non LTS versions.
 

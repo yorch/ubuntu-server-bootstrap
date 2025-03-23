@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASE_IMAGES=(
-    "ubuntu:18.04"
+    # "ubuntu:18.04"
     "ubuntu:20.04"
     "ubuntu:22.04"
     "ubuntu:24.04"
