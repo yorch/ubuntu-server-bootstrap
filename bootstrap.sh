@@ -32,19 +32,45 @@ USR_BIN_DIR=/usr/local/bin
 # -f, --fail          Fail silently (no output at all) on HTTP errors
 CURL_CMD="curl -sSLf"
 
+UBUNTU_SUPPORTED_VERSIONS=(
+    "20.04"
+    "22.04"
+    "24.04"
+)
+
 ###############################################################################
 # Utils
 ###############################################################################
+
+# Print the current date and time in a specific format
+# Usage: currentDate
+#   Returns: The current date and time in the format YYYY-MM-DD HH:MM:SS
+#   Example: currentDate
+#     Returns: 2023-10-01 12:34:56
 function currentDate() {
     echo "$(date +'%Y-%m-%d %H:%M:%S')"
 }
+
+# Log a message with the current date and time
+# Usage: log <message>
+#   message: The message to log
+#   Example: log "Hello, world!"
+#     Logs: 2023-10-01 12:34:56 - Hello, world!
 function log() {
     echo "$(currentDate) - ${@}"
 }
+
+# Log an error message with the current date and time in a specific color
+# Usage: logError <message>
+#   message: The message to log
+#   Example: logError "An error occurred!"
+#     Logs: 2023-10-01 12:34:56 - ERROR - An error occurred!
+#   The message will be printed in red
 function logError() {
     local MESSAGE="${@}"
     printf "\e[31mERROR - %s\e[m\n" "${MESSAGE}"
 }
+
 function catch() {
     local ERROR_CODE="${1}"
     local LINE_NUMBER="${2}"
@@ -56,9 +82,22 @@ function catch() {
     logError "See log file ${LOG_FILE} for more information."
     echo
 }
+
 function interrupted() {
     echo "The script was interrupted, exiting"
 }
+
+# Run a command and log the output to a file
+# Usage: runCmdAndLog <command>
+#   command: The command to run
+#   Example: runCmdAndLog "ls -l"
+#     Logs: 2023-10-01 12:34:56 - Running command: ls -l
+#     Logs the output of the command to the log file
+#   The command will be run with the same environment as the script
+#   The output will be appended to the log file
+#   The log file will be created if it does not exist
+#   The log file will be created in the same directory as the script
+#   The log file will be named <script_name>_<timestamp>.log
 function runCmdAndLog() {
     local CMD="${@}"
     echo "" &>> ${LOG_FILE}
@@ -67,18 +106,61 @@ function runCmdAndLog() {
     echo "================================================================================" &>> ${LOG_FILE}
     eval "${CMD}" &>> ${LOG_FILE}
 }
-function getLatestRelease {
+
+# Get the latest release version for a GitHub repository
+# Usage: getLatestReleaseForRepo <repo>
+#   repo: The GitHub repository in the format <owner>/<repo>
+#   Example: getLatestReleaseForRepo "owner/repo"
+#     Returns: v1.0.0
+#   The version will be extracted from the JSON response from the GitHub API
+function getLatestReleaseForRepo {
     local REPO="${1}"
     ${CURL_CMD} "https://api.github.com/repos/${REPO}/releases/latest" |
         grep '"tag_name":' |
         sed -E 's/.*"([^"]+)".*/\1/'
 }
-function downloadLatestRelease {
+
+# Download a binary from the latest release of a GitHub repository
+# Usage: downloadBinaryLatestRelease <repo> <asset_name> <output_file> [raw]
+#   repo: The GitHub repository in the format <owner>/<repo>
+#   asset_name: The name of the asset to download
+#   output_file: The file to save the downloaded asset to
+#   raw: If set to "raw", the asset will be downloaded from the raw URL
+#   If not set, the asset will be downloaded from the release URL
+#   (default: "false")
+#   Example: downloadBinaryLatestRelease "owner/repo" "asset_name" "output_file"
+#     Downloads the asset from the latest release of the repository
+#     and saves it to the specified output file
+#   The asset will be made executable
+#   The asset will be downloaded from the raw URL if the "raw" parameter is set to "raw"
+#   The asset will be downloaded from the release URL if the "raw" parameter is not set
+function downloadBinaryLatestRelease {
     local REPO="${1}"
     local ASSET_NAME="${2}"
     local OUTPUT_FILE="${3}"
     local USE_RAW="${4}"
-    local VERSION=$(getLatestRelease ${REPO})
+    downloadLatestReleaseArtifact "${REPO}" "${ASSET_NAME}" "${OUTPUT_FILE}" "${USE_RAW}"
+    chmod +x "${OUTPUT_FILE}"
+}
+
+# Download a binary from the latest release of a GitHub repository
+#
+# Usage: downloadBinaryLatestRelease <repo> <asset_name> <output_file> [raw]
+#   repo: The GitHub repository in the format <owner>/<repo>
+#   asset_name: The name of the asset to download
+#   output_file: The file to save the downloaded asset to
+#   raw: If set to "raw", the asset will be downloaded from the raw URL
+#   If not set, the asset will be downloaded from the release URL
+#   (default: "false")
+#   Example: downloadBinaryLatestRelease "owner/repo" "asset_name" "output_file"
+#     Downloads the asset from the latest release of the repository
+#     and saves it to the specified output file
+function downloadLatestReleaseArtifact {
+    local REPO="${1}"
+    local ASSET_NAME="${2}"
+    local OUTPUT_FILE="${3}"
+    local USE_RAW="${4}"
+    local VERSION=$(getLatestReleaseForRepo ${REPO})
     if [ "${USE_RAW}" = "raw" ]; then
         local URL="https://raw.githubusercontent.com/${REPO}/${VERSION}/${ASSET_NAME}"
     else
@@ -86,12 +168,43 @@ function downloadLatestRelease {
     fi
     log "Downloading from repo ${REPO} version ${VERSION} to file ${OUTPUT_FILE}"
     ${CURL_CMD} "${URL}" -o "${OUTPUT_FILE}"
-    chmod +x "${OUTPUT_FILE}"
+}
+
+function getUbuntuVersion {
+    local VERSION=$(grep -oP '(?<=DISTRIB_RELEASE=)[0-9\.]+' /etc/lsb-release)
+    if [ -z "${VERSION}" ]; then
+        logError "Could not determine Ubuntu version. Please run this script on Ubuntu."
+        exit 1
+    fi
+    echo "${VERSION}"
 }
 
 ###############################################################################
 # Script
 ###############################################################################
+
+# Check if the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    logError "This script must be run as root. Please run it with sudo."
+    exit 1
+fi
+# Check if the script is run on Ubuntu
+if [ ! -f /etc/lsb-release ]; then
+    logError "This script is only for Ubuntu. Please run it on Ubuntu."
+    exit 1
+fi
+# Check if the script is run on supported Ubuntu versions
+UBUNTU_VERSION=$(getUbuntuVersion)
+log "Running on Ubuntu ${UBUNTU_VERSION}"
+if [[ ! " ${UBUNTU_SUPPORTED_VERSIONS[@]} " =~ " ${UBUNTU_VERSION} " ]]; then
+    logError "This script is only for Ubuntu ${UBUNTU_SUPPORTED_VERSIONS[*]}. Please run it on a supported version."
+    exit 1
+fi
+# Check if the script is run on a supported architecture
+if [ "$(uname -m)" != "x86_64" ]; then
+    logError "This script is only for x86_64 architecture. Please run it on a supported architecture."
+    exit 1
+fi
 
 echo
 echo "-----------------------------------------------------------------------------------------------------"
@@ -164,7 +277,7 @@ DOCKER_COMPOSE_ASSET="docker-compose-linux-$(uname -m)"
 if ! [ -e "${DOCKER_COMPOSE_BIN}" ]; then
     mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
     log "Installing Docker Compose..."
-    downloadLatestRelease "${DOCKER_COMPOSE_REPO}" "${DOCKER_COMPOSE_ASSET}" "${DOCKER_COMPOSE_BIN}"
+    downloadBinaryLatestRelease "${DOCKER_COMPOSE_REPO}" "${DOCKER_COMPOSE_ASSET}" "${DOCKER_COMPOSE_BIN}"
 else
     log "Docker Compose already installed."
 fi
@@ -175,7 +288,7 @@ DOCKER_COMPOSE_SWITCH_REPO="docker/compose-switch"
 DOCKER_COMPOSE_SWITCH_ASSET="docker-compose-linux-amd64"
 if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
     log "Installing Docker Switch..."
-    downloadLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
+    downloadBinaryLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
     # Set Docker Compose Switch to replace Docker Compose v1
     runCmdAndLog update-alternatives \
         --install ${USR_BIN_DIR}/docker-compose \
@@ -207,7 +320,7 @@ SPEEDTEST_REPO="sivel/speedtest-cli"
 SPEEDTEST_ASSET="speedtest.py"
 if ! [ -e ${SPEEDTEST_BIN} ]; then
     log "Installing SpeedTest CLI..."
-    downloadLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
+    downloadBinaryLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
 else
     log "SpeedTest CLI already installed."
 fi
