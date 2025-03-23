@@ -27,4 +27,4 @@ jobs:
 
       - name: Run tests
         shell: bash
-        run: run-tests.sh ${{ matrix.base_image }}
+        run: bash run-tests.sh ${{ matrix.base_image }}
