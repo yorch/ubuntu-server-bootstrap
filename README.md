@@ -10,12 +10,18 @@ A slightly opinionated and straightforward script to setup base Ubuntu 18+ serve
 - Tools:
   - [`byobu`](https://ubuntu.com/server/docs/tools-byobu): Enhancement to multiplexers like `screen` or `tmux`
   - `curl`
+  - [`fd-find`](https://github.com/sharkdp/fd): A simple, fast and user-friendly alternative to 'find'
+  - [`fzf`](https://github.com/junegunn/fzf): A command-line fuzzy finder
   - `git`
   - `htop`: Better `top`
   - `neovim`
+  - [`ripgrep`](https://github.com/BurntSushi/ripgrep): Recursively searches directories for a regex pattern while respecting your gitignore
+  - [`silversearcher-ag`](https://github.com/ggreer/the_silver_searcher): A code-searching tool similar to ack, but faster
   - [`tig`](https://jonas.github.io/tig/): CLI Git client
+  - `unzip`
   - `vim`
   - `wget`
+  - `zip`
   - [SpaceVim](https://spacevim.org/)
   - [SpeedTest CLI](https://github.com/sivel/speedtest-cli)
 

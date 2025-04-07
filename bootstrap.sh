@@ -237,14 +237,18 @@ log "Installing tools..."
 runCmdAndLog ${APT_INSTALL} \
     byobu \
     curl \
+    fd-find \
+    fzf \
     git \
     htop \
     ripgrep \
     silversearcher-ag \
     software-properties-common \
     tig \
+    unzip \
     vim \
-    wget
+    wget \
+    zip
 
 # Install latest Docker version
 if ! [ -e "$(command -v docker)" ]; then
