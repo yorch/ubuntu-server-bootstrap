@@ -369,7 +369,7 @@ else
 fi
 
 # SpaceVim
-# 20250523: No longer maintained, domain is not longer valid
+# 20250523: No longer maintained, domain is no longer valid
 # log "Installing or updating SpaceVim..."
 # runCmdAndLog ${APT_INSTALL} fontconfig
 # runCmdAndLog "${CURL_CMD} https://spacevim.org/install.sh | bash"
