@@ -34,10 +34,6 @@ CURL_CMD="curl -sSLf"
 
 SPINNER_PID=""
 CURRENT_STEP=0
-# Each conditional section (Docker, NeoVim, etc.) calls logStep in both
-# if and else branches, so exactly one logStep fires per section and the
-# total is always 13 regardless of which tools are already installed.
-TOTAL_STEPS=13
 
 UBUNTU_SUPPORTED_VERSIONS=(
     "20.04"
@@ -166,11 +162,10 @@ function stopSpinner() {
 #   message: The message to log
 #   Increments the step counter and logs the message with the step number
 #   Example: logStep "Installing tools..."
-#     Logs: 2023-10-01 12:34:56 - [ 1/13] Installing tools...
+#     Logs: 2023-10-01 12:34:56 - [Step 1] Installing tools...
 function logStep() {
     CURRENT_STEP=$((CURRENT_STEP + 1))
-    printf -v STEP_NUM "%2d" "${CURRENT_STEP}"
-    log "[${STEP_NUM}/${TOTAL_STEPS}] $*"
+    log "[Step ${CURRENT_STEP}] $*"
 }
 
 # Get the latest release version for a GitHub repository
