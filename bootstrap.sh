@@ -21,8 +21,9 @@ LOCALES=(
     "en_US.UTF-8"
 )
 
+export DEBIAN_FRONTEND=noninteractive
 # APT_CMD="apt-get -qq" # -qq includes -y
-APT_CMD="apt-get -y" # -qq includes -y
+APT_CMD="apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
 APT_INSTALL="${APT_CMD} install"
 
 USR_BIN_DIR=/usr/local/bin
