@@ -36,7 +36,6 @@ USR_BIN_DIR=/usr/local/bin
 CURL_CMD="curl -sSLf"
 
 SPINNER_PID=""
-CURRENT_STEP=0
 
 UBUNTU_SUPPORTED_VERSIONS=(
     "20.04"
@@ -165,10 +164,10 @@ function stopSpinner() {
 #   message: The message to log
 #   Increments the step counter and logs the message with the step number
 #   Example: logStep "Installing tools..."
-#     Logs: 2023-10-01 12:34:56 - [Step 1] Installing tools...
+#     Logs: 2023-10-01 12:34:56 - [4/13] Installing tools...
 function logStep() {
     CURRENT_STEP=$((CURRENT_STEP + 1))
-    log "[Step ${CURRENT_STEP}] $*"
+    log "[${CURRENT_STEP}/${TOTAL_STEPS}] $*"
 }
 
 # Get the latest release version for a GitHub repository
@@ -246,6 +245,195 @@ function getUbuntuVersion {
 }
 
 ###############################################################################
+# Installation Steps
+###############################################################################
+
+function stepUpgradePackages() {
+    logStep "Upgrading existing packages..."
+    runCmdAndLog ${APT_CMD} update
+    runCmdAndLog ${APT_CMD} upgrade
+    runCmdAndLog ${APT_CMD} autoremove
+}
+
+function stepSetTimezone() {
+    logStep "Setting timezone to ${TIMEZONE}..."
+    if [ -x "$(command -v timedatectl)" ]; then
+        runCmdAndLog timedatectl set-timezone ${TIMEZONE}
+    fi
+}
+
+function stepSetLocales() {
+    logStep "Setting locales to ${LOCALES[*]}..."
+    local LOCALE_GEN=locale-gen
+    if ! [ -x "$(command -v ${LOCALE_GEN})" ]; then
+        runCmdAndLog ${APT_INSTALL} locales
+    fi
+    runCmdAndLog ${LOCALE_GEN} ${LOCALES[@]}
+}
+
+function stepInstallTools() {
+    logStep "Installing tools..."
+    runCmdAndLog ${APT_INSTALL} \
+        byobu \
+        curl \
+        fd-find \
+        fzf \
+        git \
+        htop \
+        ripgrep \
+        silversearcher-ag \
+        software-properties-common \
+        tig \
+        unzip \
+        vim \
+        wget \
+        zip
+}
+
+function stepInstallDocker() {
+    if ! [ -e "$(command -v docker)" ]; then
+        logStep "Installing Docker..."
+        runCmdAndLog ${APT_INSTALL} \
+            ca-certificates \
+            gnupg \
+            lsb-release
+        runCmdAndLog mkdir -p /etc/apt/keyrings
+        runCmdAndLog "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
+        runCmdAndLog 'echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null'
+        runCmdAndLog ${APT_CMD} update
+        runCmdAndLog ${APT_INSTALL} \
+            docker-ce \
+            docker-ce-cli \
+            containerd.io \
+            docker-compose-plugin
+    else
+        logStep "Docker already installed."
+    fi
+}
+
+function stepInstallDockerCompose() {
+    # https://github.com/docker/compose
+    local DOCKER_CLI_PLUGINS_DIR="/usr/local/lib/docker/cli-plugins"
+    local DOCKER_COMPOSE_BIN="${DOCKER_CLI_PLUGINS_DIR}/docker-compose"
+    local DOCKER_COMPOSE_REPO="docker/compose"
+    local DOCKER_COMPOSE_ASSET="docker-compose-linux-$(uname -m)"
+    if ! [ -e "${DOCKER_COMPOSE_BIN}" ]; then
+        mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
+        logStep "Installing Docker Compose..."
+        downloadBinaryLatestRelease "${DOCKER_COMPOSE_REPO}" "${DOCKER_COMPOSE_ASSET}" "${DOCKER_COMPOSE_BIN}"
+    else
+        logStep "Docker Compose already installed."
+    fi
+}
+
+function stepInstallDockerSwitch() {
+    local DOCKER_COMPOSE_SWITCH_BIN="${USR_BIN_DIR}/compose-switch"
+    local DOCKER_COMPOSE_SWITCH_REPO="docker/compose-switch"
+    local DOCKER_COMPOSE_SWITCH_ASSET="docker-compose-linux-amd64"
+    if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
+        logStep "Installing Docker Switch..."
+        downloadBinaryLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
+        # Set Docker Compose Switch to replace Docker Compose v1
+        runCmdAndLog update-alternatives \
+            --install ${USR_BIN_DIR}/docker-compose \
+            docker-compose \
+            "${DOCKER_COMPOSE_SWITCH_BIN}" \
+            99
+    else
+        logStep "Docker Switch already installed."
+    fi
+}
+
+function stepInstallNeoVim() {
+    if ! [ -e "$(command -v nvim)" ]; then
+        logStep "Installing NeoVim..."
+        # Adds repo for latest neovim version
+        runCmdAndLog add-apt-repository -y ppa:neovim-ppa/stable
+        runCmdAndLog ${APT_CMD} update
+        runCmdAndLog ${APT_INSTALL} neovim
+        # Set neovim as default vim
+        runCmdAndLog update-alternatives --set vi $(which nvim)
+        runCmdAndLog update-alternatives --set vim $(which nvim)
+    else
+        logStep "NeoVim already installed."
+    fi
+}
+
+function stepInstallSpeedTest() {
+    # https://github.com/sivel/speedtest-cli
+    local SPEEDTEST_BIN="${USR_BIN_DIR}/speedtest-cli"
+    local SPEEDTEST_REPO="sivel/speedtest-cli"
+    local SPEEDTEST_ASSET="speedtest.py"
+    if ! [ -e ${SPEEDTEST_BIN} ]; then
+        logStep "Installing SpeedTest CLI..."
+        downloadBinaryLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
+    else
+        logStep "SpeedTest CLI already installed."
+    fi
+}
+
+function stepSetupPython() {
+    logStep "Making sure python exists..."
+    local PYTHON_BIN=/usr/bin/python
+    if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
+        log "Python is not installed."
+        local PYTHON3_BIN=$(command -v python3)
+        if [ -x "${PYTHON3_BIN}" ]; then
+            log "Symlinking python3 (${PYTHON3_BIN}) to (${PYTHON_BIN})..."
+            ln -s "${PYTHON3_BIN}" "${PYTHON_BIN}"
+        fi
+    fi
+}
+
+function stepInstallZshPrezto() {
+    # https://github.com/sorin-ionescu/prezto
+    logStep "Installing ZSH and Prezto..."
+    runCmdAndLog ${APT_INSTALL} zsh
+    local ZSH_BIN=$(command -v zsh)
+    local PREZTO_DIR="${HOME}/.zprezto"
+    local PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/config/zpreztorc"
+    local P10K_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/config/p10k.zsh"
+    local PREZTO_REPO_URL="https://github.com/sorin-ionescu/prezto.git"
+
+    if [ -x "${ZSH_BIN}" ]; then
+        if ! [ -d "${PREZTO_DIR}" ]; then
+            runCmdAndLog git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}"
+            ${CURL_CMD} "${PREZTORC_URL}" -o "${PREZTO_DIR}/runcoms/zpreztorc"
+            ${CURL_CMD} "${P10K_URL}" -o "${HOME}/.p10k.zsh"
+            ${ZSH_BIN} -c "
+                setopt EXTENDED_GLOB
+                for rcfile in \"\${HOME}\"/.zprezto/runcoms/^README.md(.N); do
+                    ln -s \"\$rcfile\" \"\${HOME}/.\${rcfile:t}\"
+                done
+            "
+            chsh -s /bin/zsh
+        else
+            log "Prezto already installed."
+        fi
+    else
+        log "ERROR - Could not find ZSH even though we tried to install it"
+    fi
+}
+
+# SpaceVim
+# 20250523: No longer maintained, domain is no longer valid
+
+# Enable multiplexer `byobu`
+# byobu-enable
+
+function stepCleanupPackages() {
+    logStep "Cleaning up old packages..."
+    runCmdAndLog ${APT_CMD} autoremove
+}
+
+function stepCleanupCaches() {
+    logStep "Cleanup caches..."
+    runCmdAndLog ${APT_CMD} clean
+}
+
+###############################################################################
 # Script
 ###############################################################################
 
@@ -272,186 +460,33 @@ if [ "$(uname -m)" != "x86_64" ]; then
     exit 1
 fi
 
+STEPS=(
+    stepUpgradePackages
+    stepSetTimezone
+    stepSetLocales
+    stepInstallTools
+    stepInstallDocker
+    stepInstallDockerCompose
+    stepInstallDockerSwitch
+    stepInstallNeoVim
+    stepInstallSpeedTest
+    stepSetupPython
+    stepInstallZshPrezto
+    stepCleanupPackages
+    stepCleanupCaches
+)
+TOTAL_STEPS=${#STEPS[@]}
+CURRENT_STEP=0
+
 echo
 echo "-----------------------------------------------------------------------------------------------------"
 log "Starting $(echo ${0}), this will take a few minutes depending on your system."
 echo "-----------------------------------------------------------------------------------------------------"
 echo
 
-# Update all current packages
-logStep "Upgrading existing packages..."
-runCmdAndLog ${APT_CMD} update
-runCmdAndLog ${APT_CMD} upgrade
-runCmdAndLog ${APT_CMD} autoremove
-
-# Timezone
-logStep "Setting timezone to ${TIMEZONE}..."
-if [ -x "$(command -v timedatectl)" ]; then
-  runCmdAndLog timedatectl set-timezone ${TIMEZONE}
-fi
-
-# Locales
-logStep "Setting locales to ${LOCALES[*]}..."
-LOCALE_GEN=locale-gen
-if ! [ -x "$(command -v ${LOCALE_GEN})" ]; then
-  runCmdAndLog ${APT_INSTALL} locales
-fi
-runCmdAndLog ${LOCALE_GEN} ${LOCALES[@]}
-
-# Tools
-logStep "Installing tools..."
-runCmdAndLog ${APT_INSTALL} \
-    byobu \
-    curl \
-    fd-find \
-    fzf \
-    git \
-    htop \
-    ripgrep \
-    silversearcher-ag \
-    software-properties-common \
-    tig \
-    unzip \
-    vim \
-    wget \
-    zip
-
-# Install latest Docker version
-if ! [ -e "$(command -v docker)" ]; then
-    logStep "Installing Docker..."
-    runCmdAndLog ${APT_INSTALL} \
-        ca-certificates \
-        gnupg \
-        lsb-release
-    runCmdAndLog mkdir -p /etc/apt/keyrings
-    runCmdAndLog "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
-    runCmdAndLog 'echo \
-        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-        $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null'
-    runCmdAndLog ${APT_CMD} update
-    runCmdAndLog ${APT_INSTALL} \
-        docker-ce \
-        docker-ce-cli \
-        containerd.io \
-        docker-compose-plugin
-else
-    logStep "Docker already installed."
-fi
-
-# Docker Compose
-# https://github.com/docker/compose
-DOCKER_CLI_PLUGINS_DIR="/usr/local/lib/docker/cli-plugins"
-DOCKER_COMPOSE_BIN="${DOCKER_CLI_PLUGINS_DIR}/docker-compose"
-DOCKER_COMPOSE_REPO="docker/compose"
-DOCKER_COMPOSE_ASSET="docker-compose-linux-$(uname -m)"
-if ! [ -e "${DOCKER_COMPOSE_BIN}" ]; then
-    mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
-    logStep "Installing Docker Compose..."
-    downloadBinaryLatestRelease "${DOCKER_COMPOSE_REPO}" "${DOCKER_COMPOSE_ASSET}" "${DOCKER_COMPOSE_BIN}"
-else
-    logStep "Docker Compose already installed."
-fi
-
-# Docker Compose Switch (to ease transition from Docker Compose v1)
-DOCKER_COMPOSE_SWITCH_BIN="${USR_BIN_DIR}/compose-switch"
-DOCKER_COMPOSE_SWITCH_REPO="docker/compose-switch"
-DOCKER_COMPOSE_SWITCH_ASSET="docker-compose-linux-amd64"
-if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
-    logStep "Installing Docker Switch..."
-    downloadBinaryLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
-    # Set Docker Compose Switch to replace Docker Compose v1
-    runCmdAndLog update-alternatives \
-        --install ${USR_BIN_DIR}/docker-compose \
-        docker-compose \
-        "${DOCKER_COMPOSE_SWITCH_BIN}" \
-        99
-else
-    logStep "Docker Switch already installed."
-fi
-
-# NeoVim
-if ! [ -e "$(command -v nvim)" ]; then
-    logStep "Installing NeoVim..."
-    # Adds repo for latest neovim version
-    runCmdAndLog add-apt-repository -y ppa:neovim-ppa/stable
-    runCmdAndLog ${APT_CMD} update
-    runCmdAndLog ${APT_INSTALL} neovim
-    # Set neovim as default vim
-    runCmdAndLog update-alternatives --set vi $(which nvim)
-    runCmdAndLog update-alternatives --set vim $(which nvim)
-else
-    logStep "NeoVim already installed."
-fi
-
-# SpeedTest
-# https://github.com/sivel/speedtest-cli
-SPEEDTEST_BIN="${USR_BIN_DIR}/speedtest-cli"
-SPEEDTEST_REPO="sivel/speedtest-cli"
-SPEEDTEST_ASSET="speedtest.py"
-if ! [ -e ${SPEEDTEST_BIN} ]; then
-    logStep "Installing SpeedTest CLI..."
-    downloadBinaryLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
-else
-    logStep "SpeedTest CLI already installed."
-fi
-
-# Make sure `python` exists
-logStep "Making sure python exists..."
-PYTHON_BIN=/usr/bin/python
-if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
-    log "Python is not installed."
-    PYTHON3_BIN=$(command -v python3)
-    if [ -x "${PYTHON3_BIN}" ]; then
-        log "Symlinking python3 (${PYTHON3_BIN}) to (${PYTHON_BIN})..."
-        ln -s "${PYTHON3_BIN}" "${PYTHON_BIN}"
-    fi
-fi
-
-# ZSH and Prezto
-# https://github.com/sorin-ionescu/prezto
-logStep "Installing ZSH and Prezto..."
-runCmdAndLog ${APT_INSTALL} zsh
-ZSH_BIN=$(command -v zsh)
-PREZTO_DIR="${HOME}/.zprezto"
-PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/config/zpreztorc"
-P10K_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/config/p10k.zsh"
-PREZTO_REPO_URL="https://github.com/sorin-ionescu/prezto.git"
-
-if [ -x "${ZSH_BIN}" ]; then
-    if ! [ -d "${PREZTO_DIR}" ]; then
-        runCmdAndLog git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}"
-        ${CURL_CMD} "${PREZTORC_URL}" -o "${PREZTO_DIR}/runcoms/zpreztorc"
-        ${CURL_CMD} "${P10K_URL}" -o "${HOME}/.p10k.zsh"
-        ${ZSH_BIN} -c "
-            setopt EXTENDED_GLOB
-            for rcfile in \"\${HOME}\"/.zprezto/runcoms/^README.md(.N); do
-                ln -s \"\$rcfile\" \"\${HOME}/.\${rcfile:t}\"
-            done
-        "
-        chsh -s /bin/zsh
-    else
-        log "Prezto already installed."
-    fi
-else
-    log "ERROR - Could not find ZSH even though we tried to install it"
-fi
-
-# SpaceVim
-# 20250523: No longer maintained, domain is no longer valid
-# log "Installing or updating SpaceVim..."
-# runCmdAndLog ${APT_INSTALL} fontconfig
-# runCmdAndLog "${CURL_CMD} https://spacevim.org/install.sh | bash"
-
-# Enable multiplexer `byobu`
-# byobu-enable
-
-# Cleanup old packages
-logStep "Cleaning up old packages..."
-runCmdAndLog ${APT_CMD} autoremove
-
-# Cleanup caches
-logStep "Cleanup caches..."
-runCmdAndLog ${APT_CMD} clean
+for STEP in "${STEPS[@]}"; do
+    ${STEP}
+done
 
 ELAPSED_MINS=$(( SECONDS / 60 ))
 ELAPSED_SECS=$(( SECONDS % 60 ))
