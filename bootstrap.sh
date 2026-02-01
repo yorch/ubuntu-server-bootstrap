@@ -32,6 +32,10 @@ USR_BIN_DIR=/usr/local/bin
 # -f, --fail          Fail silently (no output at all) on HTTP errors
 CURL_CMD="curl -sSLf"
 
+SPINNER_PID=""
+CURRENT_STEP=0
+TOTAL_STEPS=13
+
 UBUNTU_SUPPORTED_VERSIONS=(
     "20.04"
     "22.04"
@@ -72,6 +76,7 @@ function logError() {
 }
 
 function catch() {
+    stopSpinner 2>/dev/null || true
     local ERROR_CODE="${1}"
     local LINE_NUMBER="${2}"
     local LAST_CMD="${3}"
@@ -84,6 +89,7 @@ function catch() {
 }
 
 function interrupted() {
+    stopSpinner 2>/dev/null || true
     echo "The script was interrupted, exiting"
 }
 
@@ -104,7 +110,63 @@ function runCmdAndLog() {
     echo "================================================================================" &>> ${LOG_FILE}
     echo "$(currentDate) - Running command: ${CMD}" &>> ${LOG_FILE}
     echo "================================================================================" &>> ${LOG_FILE}
+    startSpinner
     eval "${CMD}" &>> ${LOG_FILE}
+    stopSpinner
+}
+
+# Start a background spinner to indicate progress
+# Usage: startSpinner
+#   Starts a spinner that shows elapsed time
+#   The spinner runs in the background and updates every 0.2 seconds
+#   Use stopSpinner to stop the spinner
+function startSpinner() {
+    # Only show spinner if stdout is a terminal
+    if [ ! -t 1 ]; then
+        return
+    fi
+    local START=${SECONDS}
+    (
+        local CHARS='/-\|'
+        local I=0
+        while true; do
+            local ELAPSED=$(( SECONDS - START ))
+            local MINS=$(( ELAPSED / 60 ))
+            local SECS=$(( ELAPSED % 60 ))
+            printf "\r  %s  %02d:%02d elapsed" "${CHARS:I%4:1}" "${MINS}" "${SECS}"
+            I=$(( I + 1 ))
+            sleep 0.2
+        done
+    ) &
+    SPINNER_PID=$!
+}
+
+# Stop the background spinner
+# Usage: stopSpinner
+#   Stops the spinner started by startSpinner
+#   Clears the spinner line from the terminal
+function stopSpinner() {
+    if [ ! -t 1 ]; then
+        return
+    fi
+    if [ -n "${SPINNER_PID}" ] && kill -0 "${SPINNER_PID}" 2>/dev/null; then
+        kill "${SPINNER_PID}" 2>/dev/null
+        wait "${SPINNER_PID}" 2>/dev/null || true
+        printf "\r\033[K"
+    fi
+    SPINNER_PID=""
+}
+
+# Log a step message with step counter and current date/time
+# Usage: logStep <message>
+#   message: The message to log
+#   Increments the step counter and logs the message with the step number
+#   Example: logStep "Installing tools..."
+#     Logs: 2023-10-01 12:34:56 - [ 1/13] Installing tools...
+function logStep() {
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+    printf -v STEP_NUM "%2d" "${CURRENT_STEP}"
+    log "[${STEP_NUM}/${TOTAL_STEPS}] ${@}"
 }
 
 # Get the latest release version for a GitHub repository
@@ -167,7 +229,9 @@ function downloadLatestReleaseArtifact {
         local URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET_NAME}"
     fi
     log "Downloading from repo ${REPO} version ${VERSION} to file ${OUTPUT_FILE}"
+    startSpinner
     ${CURL_CMD} "${URL}" -o "${OUTPUT_FILE}"
+    stopSpinner
 }
 
 function getUbuntuVersion {
@@ -213,19 +277,19 @@ echo "--------------------------------------------------------------------------
 echo
 
 # Update all current packages
-log "Upgrading existing packages..."
+logStep "Upgrading existing packages..."
 runCmdAndLog ${APT_CMD} update
 runCmdAndLog ${APT_CMD} upgrade
 runCmdAndLog ${APT_CMD} autoremove
 
 # Timezone
-log "Setting timezone to ${TIMEZONE}..."
+logStep "Setting timezone to ${TIMEZONE}..."
 if [ -x "$(command -v timedatectl)" ]; then
   runCmdAndLog timedatectl set-timezone ${TIMEZONE}
 fi
 
 # Locales
-log "Setting locales to ${LOCALES[*]}..."
+logStep "Setting locales to ${LOCALES[*]}..."
 LOCALE_GEN=locale-gen
 if ! [ -x "$(command -v ${LOCALE_GEN})" ]; then
   runCmdAndLog ${APT_INSTALL} locales
@@ -233,7 +297,7 @@ fi
 runCmdAndLog ${LOCALE_GEN} ${LOCALES[@]}
 
 # Tools
-log "Installing tools..."
+logStep "Installing tools..."
 runCmdAndLog ${APT_INSTALL} \
     byobu \
     curl \
@@ -252,7 +316,7 @@ runCmdAndLog ${APT_INSTALL} \
 
 # Install latest Docker version
 if ! [ -e "$(command -v docker)" ]; then
-    log "Installing Docker..."
+    logStep "Installing Docker..."
     runCmdAndLog ${APT_INSTALL} \
         ca-certificates \
         gnupg \
@@ -269,7 +333,7 @@ if ! [ -e "$(command -v docker)" ]; then
         containerd.io \
         docker-compose-plugin
 else
-    log "Docker already installed."
+    logStep "Docker already installed."
 fi
 
 # Docker Compose
@@ -280,10 +344,10 @@ DOCKER_COMPOSE_REPO="docker/compose"
 DOCKER_COMPOSE_ASSET="docker-compose-linux-$(uname -m)"
 if ! [ -e "${DOCKER_COMPOSE_BIN}" ]; then
     mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
-    log "Installing Docker Compose..."
+    logStep "Installing Docker Compose..."
     downloadBinaryLatestRelease "${DOCKER_COMPOSE_REPO}" "${DOCKER_COMPOSE_ASSET}" "${DOCKER_COMPOSE_BIN}"
 else
-    log "Docker Compose already installed."
+    logStep "Docker Compose already installed."
 fi
 
 # Docker Compose Switch (to ease transition from Docker Compose v1)
@@ -291,7 +355,7 @@ DOCKER_COMPOSE_SWITCH_BIN="${USR_BIN_DIR}/compose-switch"
 DOCKER_COMPOSE_SWITCH_REPO="docker/compose-switch"
 DOCKER_COMPOSE_SWITCH_ASSET="docker-compose-linux-amd64"
 if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
-    log "Installing Docker Switch..."
+    logStep "Installing Docker Switch..."
     downloadBinaryLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
     # Set Docker Compose Switch to replace Docker Compose v1
     runCmdAndLog update-alternatives \
@@ -300,12 +364,12 @@ if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
         "${DOCKER_COMPOSE_SWITCH_BIN}" \
         99
 else
-    log "Docker Switch already installed."
+    logStep "Docker Switch already installed."
 fi
 
 # NeoVim
 if ! [ -e "$(command -v nvim)" ]; then
-    log "Installing NeoVim..."
+    logStep "Installing NeoVim..."
     # Adds repo for latest neovim version
     runCmdAndLog add-apt-repository -y ppa:neovim-ppa/stable
     runCmdAndLog ${APT_CMD} update
@@ -314,7 +378,7 @@ if ! [ -e "$(command -v nvim)" ]; then
     runCmdAndLog update-alternatives --set vi $(which nvim)
     runCmdAndLog update-alternatives --set vim $(which nvim)
 else
-    log "NeoVim already installed."
+    logStep "NeoVim already installed."
 fi
 
 # SpeedTest
@@ -323,14 +387,14 @@ SPEEDTEST_BIN="${USR_BIN_DIR}/speedtest-cli"
 SPEEDTEST_REPO="sivel/speedtest-cli"
 SPEEDTEST_ASSET="speedtest.py"
 if ! [ -e ${SPEEDTEST_BIN} ]; then
-    log "Installing SpeedTest CLI..."
+    logStep "Installing SpeedTest CLI..."
     downloadBinaryLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
 else
-    log "SpeedTest CLI already installed."
+    logStep "SpeedTest CLI already installed."
 fi
 
 # Make sure `python` exists
-log "Making sure python exists..."
+logStep "Making sure python exists..."
 PYTHON_BIN=/usr/bin/python
 if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
     log "Python is not installed."
@@ -343,7 +407,7 @@ fi
 
 # ZSH and Prezto
 # https://github.com/sorin-ionescu/prezto
-log "Installing ZSH and Prezto..."
+logStep "Installing ZSH and Prezto..."
 runCmdAndLog ${APT_INSTALL} zsh
 ZSH_BIN=$(command -v zsh)
 PREZTO_DIR="${HOME}/.zprezto"
@@ -378,16 +442,19 @@ fi
 # byobu-enable
 
 # Cleanup old packages
-log "Cleaning up old packages..."
+logStep "Cleaning up old packages..."
 runCmdAndLog ${APT_CMD} autoremove
 
 # Cleanup caches
-log "Cleanup caches..."
+logStep "Cleanup caches..."
 runCmdAndLog ${APT_CMD} clean
+
+ELAPSED_MINS=$(( SECONDS / 60 ))
+ELAPSED_SECS=$(( SECONDS % 60 ))
 
 echo
 echo "-----------------------------------------------------------------------------------------------------"
-log "All Done! You should restart the machine now!"
+log "All Done in ${ELAPSED_MINS}m ${ELAPSED_SECS}s! You should restart the machine now!"
 log "A log file is available at ${LOG_FILE}"
 echo "-----------------------------------------------------------------------------------------------------"
 echo
