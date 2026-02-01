@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr:*)",
+      "mcp__ide",
+      "mcp__memory",
+      "mcp__sequential-thinking",
+      "mcp__serena",
+      "WebFetch",
+      "WebSearch"
+    ]
+  }
+}
