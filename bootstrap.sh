@@ -248,6 +248,11 @@ function getUbuntuVersion {
 # Installation Steps
 ###############################################################################
 
+# Upgrade existing system packages to latest versions
+# Usage: stepUpgradePackages
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepUpgradePackages
 function stepUpgradePackages() {
     logStep "Upgrading existing packages..."
     runCmdAndLog ${APT_CMD} update
@@ -255,6 +260,11 @@ function stepUpgradePackages() {
     runCmdAndLog ${APT_CMD} autoremove
 }
 
+# Set the system timezone
+# Usage: stepSetTimezone
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepSetTimezone
 function stepSetTimezone() {
     logStep "Setting timezone to ${TIMEZONE}..."
     if [ -x "$(command -v timedatectl)" ]; then
@@ -262,15 +272,25 @@ function stepSetTimezone() {
     fi
 }
 
+# Set system locales
+# Usage: stepSetLocales
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepSetLocales
 function stepSetLocales() {
     logStep "Setting locales to ${LOCALES[*]}..."
     local LOCALE_GEN=locale-gen
     if ! [ -x "$(command -v ${LOCALE_GEN})" ]; then
         runCmdAndLog ${APT_INSTALL} locales
     fi
-    runCmdAndLog ${LOCALE_GEN} ${LOCALES[@]}
+    runCmdAndLog "${LOCALE_GEN}" "${LOCALES[@]}"
 }
 
+# Install common CLI tools via apt
+# Usage: stepInstallTools
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepInstallTools
 function stepInstallTools() {
     logStep "Installing tools..."
     runCmdAndLog ${APT_INSTALL} \
@@ -288,8 +308,14 @@ function stepInstallTools() {
         vim \
         wget \
         zip
+    log "Tools installed."
 }
 
+# Install Docker CE from the official Docker repository
+# Usage: stepInstallDocker
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepInstallDocker
 function stepInstallDocker() {
     if ! [ -e "$(command -v docker)" ]; then
         logStep "Installing Docker..."
@@ -308,11 +334,17 @@ function stepInstallDocker() {
             docker-ce-cli \
             containerd.io \
             docker-compose-plugin
+        log "Docker installed."
     else
         logStep "Docker already installed."
     fi
 }
 
+# Install Docker Compose v2 as a Docker CLI plugin
+# Usage: stepInstallDockerCompose
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepInstallDockerCompose
 function stepInstallDockerCompose() {
     # https://github.com/docker/compose
     local DOCKER_CLI_PLUGINS_DIR="/usr/local/lib/docker/cli-plugins"
@@ -320,32 +352,44 @@ function stepInstallDockerCompose() {
     local DOCKER_COMPOSE_REPO="docker/compose"
     local DOCKER_COMPOSE_ASSET="docker-compose-linux-$(uname -m)"
     if ! [ -e "${DOCKER_COMPOSE_BIN}" ]; then
-        mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
+        runCmdAndLog mkdir -p "${DOCKER_CLI_PLUGINS_DIR}"
         logStep "Installing Docker Compose..."
         downloadBinaryLatestRelease "${DOCKER_COMPOSE_REPO}" "${DOCKER_COMPOSE_ASSET}" "${DOCKER_COMPOSE_BIN}"
+        log "Docker Compose installed."
     else
         logStep "Docker Compose already installed."
     fi
 }
 
+# Install Docker Compose Switch for v1-to-v2 compatibility
+# Usage: stepInstallDockerSwitch
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepInstallDockerSwitch
 function stepInstallDockerSwitch() {
     local DOCKER_COMPOSE_SWITCH_BIN="${USR_BIN_DIR}/compose-switch"
     local DOCKER_COMPOSE_SWITCH_REPO="docker/compose-switch"
     local DOCKER_COMPOSE_SWITCH_ASSET="docker-compose-linux-amd64"
-    if ! [ -e ${DOCKER_COMPOSE_SWITCH_BIN} ]; then
+    if ! [ -e "${DOCKER_COMPOSE_SWITCH_BIN}" ]; then
         logStep "Installing Docker Switch..."
         downloadBinaryLatestRelease "${DOCKER_COMPOSE_SWITCH_REPO}" "${DOCKER_COMPOSE_SWITCH_ASSET}" "${DOCKER_COMPOSE_SWITCH_BIN}"
         # Set Docker Compose Switch to replace Docker Compose v1
         runCmdAndLog update-alternatives \
-            --install ${USR_BIN_DIR}/docker-compose \
+            --install "${USR_BIN_DIR}/docker-compose" \
             docker-compose \
             "${DOCKER_COMPOSE_SWITCH_BIN}" \
             99
+        log "Docker Switch installed."
     else
         logStep "Docker Switch already installed."
     fi
 }
 
+# Install NeoVim and set it as the default vi/vim editor
+# Usage: stepInstallNeoVim
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepInstallNeoVim
 function stepInstallNeoVim() {
     if ! [ -e "$(command -v nvim)" ]; then
         logStep "Installing NeoVim..."
@@ -354,44 +398,66 @@ function stepInstallNeoVim() {
         runCmdAndLog ${APT_CMD} update
         runCmdAndLog ${APT_INSTALL} neovim
         # Set neovim as default vim
-        runCmdAndLog update-alternatives --set vi $(which nvim)
-        runCmdAndLog update-alternatives --set vim $(which nvim)
+        local NVIM_BIN
+        NVIM_BIN="$(command -v nvim)"
+        runCmdAndLog update-alternatives --set vi "${NVIM_BIN}"
+        runCmdAndLog update-alternatives --set vim "${NVIM_BIN}"
+        log "NeoVim installed."
     else
         logStep "NeoVim already installed."
     fi
 }
 
+# Install SpeedTest CLI from GitHub
+# Usage: stepInstallSpeedTest
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepInstallSpeedTest
 function stepInstallSpeedTest() {
     # https://github.com/sivel/speedtest-cli
     local SPEEDTEST_BIN="${USR_BIN_DIR}/speedtest-cli"
     local SPEEDTEST_REPO="sivel/speedtest-cli"
     local SPEEDTEST_ASSET="speedtest.py"
-    if ! [ -e ${SPEEDTEST_BIN} ]; then
+    if ! [ -e "${SPEEDTEST_BIN}" ]; then
         logStep "Installing SpeedTest CLI..."
         downloadBinaryLatestRelease "${SPEEDTEST_REPO}" "${SPEEDTEST_ASSET}" "${SPEEDTEST_BIN}" "raw"
+        log "SpeedTest CLI installed."
     else
         logStep "SpeedTest CLI already installed."
     fi
 }
 
+# Ensure python command exists by symlinking python3 if needed
+# Usage: stepSetupPython
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepSetupPython
 function stepSetupPython() {
     logStep "Making sure python exists..."
     local PYTHON_BIN=/usr/bin/python
-    if ! [ -x "$(command -v python)" ] || ! [ -e ${PYTHON_BIN} ]; then
+    if ! [ -x "$(command -v python)" ] || ! [ -e "${PYTHON_BIN}" ]; then
         log "Python is not installed."
-        local PYTHON3_BIN=$(command -v python3)
+        local PYTHON3_BIN
+        PYTHON3_BIN=$(command -v python3)
         if [ -x "${PYTHON3_BIN}" ]; then
             log "Symlinking python3 (${PYTHON3_BIN}) to (${PYTHON_BIN})..."
-            ln -s "${PYTHON3_BIN}" "${PYTHON_BIN}"
+            runCmdAndLog ln -s "${PYTHON3_BIN}" "${PYTHON_BIN}"
+            log "Python symlink created."
         fi
     fi
 }
 
+# Install ZSH with Prezto framework and Powerlevel10k theme
+# Usage: stepInstallZshPrezto
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepInstallZshPrezto
 function stepInstallZshPrezto() {
     # https://github.com/sorin-ionescu/prezto
     logStep "Installing ZSH and Prezto..."
     runCmdAndLog ${APT_INSTALL} zsh
-    local ZSH_BIN=$(command -v zsh)
+    local ZSH_BIN
+    ZSH_BIN=$(command -v zsh)
     local PREZTO_DIR="${HOME}/.zprezto"
     local PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/config/zpreztorc"
     local P10K_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/config/p10k.zsh"
@@ -400,15 +466,16 @@ function stepInstallZshPrezto() {
     if [ -x "${ZSH_BIN}" ]; then
         if ! [ -d "${PREZTO_DIR}" ]; then
             runCmdAndLog git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}"
-            ${CURL_CMD} "${PREZTORC_URL}" -o "${PREZTO_DIR}/runcoms/zpreztorc"
-            ${CURL_CMD} "${P10K_URL}" -o "${HOME}/.p10k.zsh"
-            ${ZSH_BIN} -c "
+            runCmdAndLog ${CURL_CMD} "${PREZTORC_URL}" -o "${PREZTO_DIR}/runcoms/zpreztorc"
+            runCmdAndLog ${CURL_CMD} "${P10K_URL}" -o "${HOME}/.p10k.zsh"
+            runCmdAndLog ${ZSH_BIN} -c "
                 setopt EXTENDED_GLOB
                 for rcfile in \"\${HOME}\"/.zprezto/runcoms/^README.md(.N); do
                     ln -s \"\$rcfile\" \"\${HOME}/.\${rcfile:t}\"
                 done
             "
-            chsh -s /bin/zsh
+            runCmdAndLog chsh -s /bin/zsh
+            log "ZSH and Prezto installed."
         else
             log "Prezto already installed."
         fi
@@ -423,11 +490,21 @@ function stepInstallZshPrezto() {
 # Enable multiplexer `byobu`
 # byobu-enable
 
+# Remove unused packages left over from upgrades and installs
+# Usage: stepCleanupPackages
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepCleanupPackages
 function stepCleanupPackages() {
     logStep "Cleaning up old packages..."
     runCmdAndLog ${APT_CMD} autoremove
 }
 
+# Clean apt package caches to free disk space
+# Usage: stepCleanupCaches
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepCleanupCaches
 function stepCleanupCaches() {
     logStep "Cleanup caches..."
     runCmdAndLog ${APT_CMD} clean
@@ -485,7 +562,7 @@ echo "--------------------------------------------------------------------------
 echo
 
 for STEP in "${STEPS[@]}"; do
-    ${STEP}
+    "${STEP}"
 done
 
 ELAPSED_MINS=$(( SECONDS / 60 ))
