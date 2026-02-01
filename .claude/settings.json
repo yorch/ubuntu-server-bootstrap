@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
+      "Bash(gh api:*)",
       "Bash(gh pr:*)",
+      "Bash(git fetch:*)",
       "mcp__ide",
       "mcp__memory",
       "mcp__sequential-thinking",
