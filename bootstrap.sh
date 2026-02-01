@@ -468,7 +468,8 @@ function stepInstallZshPrezto() {
             runCmdAndLog git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}"
             runCmdAndLog ${CURL_CMD} "${PREZTORC_URL}" -o "${PREZTO_DIR}/runcoms/zpreztorc"
             runCmdAndLog ${CURL_CMD} "${P10K_URL}" -o "${HOME}/.p10k.zsh"
-            runCmdAndLog ${ZSH_BIN} -c "
+            # Run zsh directly (complex quoting is incompatible with runCmdAndLog's eval)
+            ${ZSH_BIN} -c "
                 setopt EXTENDED_GLOB
                 for rcfile in \"\${HOME}\"/.zprezto/runcoms/^README.md(.N); do
                     ln -s \"\$rcfile\" \"\${HOME}/.\${rcfile:t}\"
