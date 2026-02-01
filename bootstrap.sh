@@ -34,6 +34,9 @@ CURL_CMD="curl -sSLf"
 
 SPINNER_PID=""
 CURRENT_STEP=0
+# Each conditional section (Docker, NeoVim, etc.) calls logStep in both
+# if and else branches, so exactly one logStep fires per section and the
+# total is always 13 regardless of which tools are already installed.
 TOTAL_STEPS=13
 
 UBUNTU_SUPPORTED_VERSIONS=(
@@ -125,12 +128,13 @@ function startSpinner() {
     if [ ! -t 1 ]; then
         return
     fi
-    local START=${SECONDS}
+    local START=$(date +%s)
     (
         local CHARS='/-\|'
         local I=0
         while true; do
-            local ELAPSED=$(( SECONDS - START ))
+            local NOW=$(date +%s)
+            local ELAPSED=$(( NOW - START ))
             local MINS=$(( ELAPSED / 60 ))
             local SECS=$(( ELAPSED % 60 ))
             printf "\r  %s  %02d:%02d elapsed" "${CHARS:I%4:1}" "${MINS}" "${SECS}"
@@ -166,7 +170,7 @@ function stopSpinner() {
 function logStep() {
     CURRENT_STEP=$((CURRENT_STEP + 1))
     printf -v STEP_NUM "%2d" "${CURRENT_STEP}"
-    log "[${STEP_NUM}/${TOTAL_STEPS}] ${@}"
+    log "[${STEP_NUM}/${TOTAL_STEPS}] $*"
 }
 
 # Get the latest release version for a GitHub repository
