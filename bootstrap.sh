@@ -22,7 +22,9 @@ LOCALES=(
 )
 
 export DEBIAN_FRONTEND=noninteractive
-# APT_CMD="apt-get -qq" # -qq includes -y
+# Configure apt-get to run non-interactively and handle configuration files safely:
+#   --force-confdef : automatically select the default action for modified configuration files
+#   --force-confold : keep existing configuration files when a conflict is detected
 APT_CMD="apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
 APT_INSTALL="${APT_CMD} install"
 
