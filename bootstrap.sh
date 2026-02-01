@@ -410,13 +410,15 @@ logStep "Installing ZSH and Prezto..."
 runCmdAndLog ${APT_INSTALL} zsh
 ZSH_BIN=$(command -v zsh)
 PREZTO_DIR="${HOME}/.zprezto"
-PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/.zpreztorc"
+PREZTORC_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/config/zpreztorc"
+P10K_URL="https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/config/p10k.zsh"
 PREZTO_REPO_URL="https://github.com/sorin-ionescu/prezto.git"
 
 if [ -x "${ZSH_BIN}" ]; then
     if ! [ -d "${PREZTO_DIR}" ]; then
         runCmdAndLog git clone --recursive "${PREZTO_REPO_URL}" "${PREZTO_DIR}"
         ${CURL_CMD} "${PREZTORC_URL}" -o "${PREZTO_DIR}/runcoms/zpreztorc"
+        ${CURL_CMD} "${P10K_URL}" -o "${HOME}/.p10k.zsh"
         ${ZSH_BIN} -c "
             setopt EXTENDED_GLOB
             for rcfile in \"\${HOME}\"/.zprezto/runcoms/^README.md(.N); do
