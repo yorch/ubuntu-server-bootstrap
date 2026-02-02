@@ -293,6 +293,7 @@ function stepSetLocales() {
 function stepInstallTools() {
     logStep "Installing tools..."
     runCmdAndLog ${APT_INSTALL} \
+        build-essential \
         byobu \
         curl \
         fd-find \
@@ -384,6 +385,35 @@ function stepInstallDockerSwitch() {
     fi
 }
 
+# Install LazyGit TUI from GitHub releases
+# Usage: stepInstallLazyGit
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepInstallLazyGit
+function stepInstallLazyGit() {
+    local LAZYGIT_BIN="${USR_BIN_DIR}/lazygit"
+    local LAZYGIT_REPO="jesseduffield/lazygit"
+    local LAZYGIT_TMP_FILE="/tmp/lazygit.tar.gz"
+    if ! [ -e "${LAZYGIT_BIN}" ]; then
+        logStep "Installing LazyGit..."
+        local LAZYGIT_VERSION
+        LAZYGIT_VERSION=$(getLatestReleaseForRepo "${LAZYGIT_REPO}")
+        # Remove v prefix from version string
+        LAZYGIT_VERSION="${LAZYGIT_VERSION#v}"
+        local LAZYGIT_ASSET="lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+        downloadLatestReleaseArtifact \
+            "${LAZYGIT_REPO}" \
+            "${LAZYGIT_ASSET}" \
+            "${LAZYGIT_TMP_FILE}"
+        runCmdAndLog tar xf "${LAZYGIT_TMP_FILE}" -C /tmp lazygit
+        runCmdAndLog install /tmp/lazygit -D -t "${USR_BIN_DIR}/"
+        runCmdAndLog rm -rf "${LAZYGIT_TMP_FILE}" /tmp/lazygit
+        log "LazyGit installed."
+    else
+        logStep "LazyGit already installed."
+    fi
+}
+
 # Install NeoVim and set it as the default vi/vim editor
 # Usage: stepInstallNeoVim
 #   Arguments: none
@@ -392,15 +422,18 @@ function stepInstallDockerSwitch() {
 function stepInstallNeoVim() {
     if ! [ -e "$(command -v nvim)" ]; then
         logStep "Installing NeoVim..."
-        # Adds repo for latest neovim version
-        runCmdAndLog add-apt-repository -y ppa:neovim-ppa/unstable
-        runCmdAndLog ${APT_CMD} update
-        runCmdAndLog ${APT_INSTALL} neovim
+        local NVIM_TMP_FILE="/tmp/nvim.deb"
+        downloadLatestReleaseArtifact \
+            "neovim/neovim-releases" \
+            "nvim-linux-x86_64.deb" \
+            "${NVIM_TMP_FILE}"
+        runCmdAndLog ${APT_INSTALL} "${NVIM_TMP_FILE}"
         # Set neovim as default vim
         local NVIM_BIN
         NVIM_BIN="$(command -v nvim)"
         runCmdAndLog update-alternatives --install /usr/bin/vi vi "${NVIM_BIN}" 110
         runCmdAndLog update-alternatives --install /usr/bin/vim vim "${NVIM_BIN}" 110
+        runCmdAndLog rm -f "${NVIM_TMP_FILE}"
         log "NeoVim installed."
     else
         logStep "NeoVim already installed."
@@ -545,6 +578,7 @@ STEPS=(
     stepInstallDocker
     stepInstallDockerCompose
     stepInstallDockerSwitch
+    stepInstallLazyGit
     stepInstallNeoVim
     stepInstallSpeedTest
     stepSetupPython
