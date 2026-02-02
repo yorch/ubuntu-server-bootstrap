@@ -393,7 +393,7 @@ function stepInstallNeoVim() {
     if ! [ -e "$(command -v nvim)" ]; then
         logStep "Installing NeoVim..."
         # Adds repo for latest neovim version
-        runCmdAndLog add-apt-repository -y ppa:neovim-ppa/stable
+        runCmdAndLog add-apt-repository -y ppa:neovim-ppa/unstable
         runCmdAndLog ${APT_CMD} update
         runCmdAndLog ${APT_INSTALL} neovim
         # Set neovim as default vim
