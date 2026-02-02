@@ -38,7 +38,6 @@ CURL_CMD="curl -sSLf"
 SPINNER_PID=""
 
 UBUNTU_SUPPORTED_VERSIONS=(
-    "20.04"
     "22.04"
     "24.04"
 )
