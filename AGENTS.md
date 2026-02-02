@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-Ubuntu Server Bootstrap is an opinionated bash script for provisioning Ubuntu 18+ servers with development and DevOps tools. It installs Docker CE, Docker Compose v2, Zsh with Prezto, and a curated set of CLI tools (ripgrep, fd, fzf, ag, tig, htop, byobu, neovim, etc.).
+Ubuntu Server Bootstrap is an opinionated bash script for provisioning Ubuntu 22+ servers with development and DevOps tools. It installs Docker CE, Docker Compose v2, Zsh with Prezto, and a curated set of CLI tools (ripgrep, fd, fzf, ag, tig, htop, byobu, neovim, etc.).
 
-**Supported Ubuntu LTS versions:** 20.04, 22.04, 24.04 (x86_64 only)
+**Supported Ubuntu LTS versions:** 22.04, 24.04 (x86_64 only)
 
 ## Project Structure
 
@@ -12,7 +12,7 @@ Ubuntu Server Bootstrap is an opinionated bash script for provisioning Ubuntu 18
 bootstrap.sh       # Main provisioning script (~393 lines)
 run-tests.sh       # Test runner - builds Docker images per Ubuntu version
 Dockerfile         # Container definition for testing
-.github/workflows/ci.yaml  # GitHub Actions CI (matrix: 20.04, 22.04, 24.04)
+.github/workflows/ci.yaml  # GitHub Actions CI (matrix: 22.04, 24.04)
 .zpreztorc         # Zsh Prezto configuration
 .editorconfig      # Editor style rules
 ```
@@ -48,12 +48,11 @@ Each tool follows this pattern:
 Tests are Docker-based. Each supported Ubuntu version builds a container that runs the full bootstrap script:
 
 ```bash
-bash run-tests.sh ubuntu:20.04
 bash run-tests.sh ubuntu:22.04
 bash run-tests.sh ubuntu:24.04
 ```
 
-CI runs all three versions in parallel via GitHub Actions matrix strategy.
+CI runs both versions in parallel via GitHub Actions matrix strategy.
 
 ## Requirements
 
