@@ -2,14 +2,14 @@
 
 ## Project Overview
 
-Ubuntu Server Bootstrap is an opinionated bash script for provisioning Ubuntu 22+ servers with development and DevOps tools. It installs Docker CE, Docker Compose v2, Zsh with Prezto, and a curated set of CLI tools (ripgrep, fd, fzf, ag, tig, htop, byobu, neovim, etc.).
+Ubuntu Server Bootstrap is an opinionated bash script for provisioning Ubuntu 22+ servers with development and DevOps tools. It installs Docker CE, Docker Compose v2, Zsh with Prezto, and a curated set of CLI tools (ripgrep, fd, fzf, ag, tig, htop, byobu, neovim, lazygit, etc.). Supports CLI flags (e.g. `--nvim-deb`, `--help`).
 
 **Supported Ubuntu LTS versions:** 22.04, 24.04 (x86_64 only)
 
 ## Project Structure
 
 ```
-bootstrap.sh       # Main provisioning script (~393 lines)
+bootstrap.sh       # Main provisioning script (~660 lines)
 run-tests.sh       # Test runner - builds Docker images per Ubuntu version
 Dockerfile         # Container definition for testing
 .github/workflows/ci.yaml  # GitHub Actions CI (matrix: 22.04, 24.04)
@@ -25,8 +25,9 @@ Dockerfile         # Container definition for testing
 - Error/debug/SIGINT trap handlers are defined for logging context
 - Variables use `SCREAMING_SNAKE_CASE` and `${VAR}` interpolation (not `$VAR`)
 - Functions are documented with usage, arguments, return values, and examples
-- Utility functions: `log()`, `logError()`, `runCmdAndLog()`, `currentDate()`
+- Utility functions: `log()`, `logError()`, `runCmdAndLog()`, `currentDate()`, `usage()`
 - GitHub API helpers: `getLatestReleaseForRepo()`, `downloadBinaryLatestRelease()`
+- CLI argument parsing via `while`/`case` loop (`--nvim-deb`, `--help`)
 
 ### Installation Pattern
 

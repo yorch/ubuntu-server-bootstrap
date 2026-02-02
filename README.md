@@ -1,6 +1,6 @@
 # Ubuntu Server Bootstrap
 
-A slightly opinionated and straightforward script to setup base Ubuntu 18+ servers environment with:
+A slightly opinionated and straightforward script to setup base Ubuntu 22+ servers environment with:
 
 - Docker CE
 - [Docker Compose v2](https://github.com/docker/compose)
@@ -8,22 +8,23 @@ A slightly opinionated and straightforward script to setup base Ubuntu 18+ serve
 - ZSH with [Prezto](https://github.com/sorin-ionescu/prezto)
 - Symlinks `python3` to `python` if `python` command is not found
 - Tools:
+  - `build-essential`: Essential build tools (gcc, make, etc.)
   - [`byobu`](https://ubuntu.com/server/docs/tools-byobu): Enhancement to multiplexers like `screen` or `tmux`
   - `curl`
   - [`fd-find`](https://github.com/sharkdp/fd): A simple, fast and user-friendly alternative to 'find'
   - [`fzf`](https://github.com/junegunn/fzf): A command-line fuzzy finder
   - `git`
   - `htop`: Better `top`
-  - `neovim`
+  - [`lazygit`](https://github.com/jesseduffield/lazygit): A simple terminal UI for git commands
+  - [`neovim`](https://neovim.io/): Hyperextensible Vim-based text editor (set as default `vi`/`vim`)
   - [`ripgrep`](https://github.com/BurntSushi/ripgrep): Recursively searches directories for a regex pattern while respecting your gitignore
   - [`silversearcher-ag`](https://github.com/ggreer/the_silver_searcher): A code-searching tool similar to ack, but faster
+  - [SpeedTest CLI](https://github.com/sivel/speedtest-cli)
   - [`tig`](https://jonas.github.io/tig/): CLI Git client
   - `unzip`
   - `vim`
   - `wget`
   - `zip`
-  - [SpaceVim](https://spacevim.org/)
-  - [SpeedTest CLI](https://github.com/sivel/speedtest-cli)
 
 > **This script is intended to be run as `root`**.
 >
@@ -31,7 +32,6 @@ A slightly opinionated and straightforward script to setup base Ubuntu 18+ serve
 
 It's tested with the following Ubuntu LTS versions:
 
-- `20.04`
 - `22.04`
 - `24.04`
 
@@ -49,6 +49,26 @@ Or with `curl` if already installed:
 
 ```bash
 curl -s https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/bootstrap.sh | bash
+```
+
+### Options
+
+To see all available options:
+
+```bash
+bash bootstrap.sh --help
+```
+
+| Flag | Description |
+|------|-------------|
+| `--nvim-deb` | Install NeoVim from GitHub releases `.deb` package (default: PPA unstable) |
+| `--help` | Show usage information and exit |
+
+To use flags, download the script first:
+
+```bash
+wget -q -O bootstrap.sh https://raw.githubusercontent.com/yorch/ubuntu-server-bootstrap/main/bootstrap.sh
+bash bootstrap.sh --nvim-deb
 ```
 
 This will take a few minutes, after its done, you might want to restart the box in case there is a newer kernel installed that just got installed.

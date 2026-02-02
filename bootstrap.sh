@@ -35,12 +35,34 @@ USR_BIN_DIR=/usr/local/bin
 # -f, --fail          Fail silently (no output at all) on HTTP errors
 CURL_CMD="curl -sSLf"
 
+NVIM_USE_DEB=false
 SPINNER_PID=""
 
 UBUNTU_SUPPORTED_VERSIONS=(
     "22.04"
     "24.04"
 )
+
+###############################################################################
+# Usage
+###############################################################################
+
+# Print usage information and available options
+# Usage: usage
+#   Arguments: none
+#   Returns: 0
+#   Example: usage
+function usage() {
+    echo "Usage: $(basename "${0}") [OPTIONS]"
+    echo
+    echo "Bootstrap an Ubuntu server with development and DevOps tools."
+    echo
+    echo "Options:"
+    echo "  --nvim-deb    Install NeoVim from GitHub releases .deb package"
+    echo "                (default: install from PPA unstable)"
+    echo "  --help        Show this help message and exit"
+    echo
+}
 
 ###############################################################################
 # Utils
@@ -293,6 +315,7 @@ function stepSetLocales() {
 function stepInstallTools() {
     logStep "Installing tools..."
     runCmdAndLog ${APT_INSTALL} \
+        build-essential \
         byobu \
         curl \
         fd-find \
@@ -384,6 +407,35 @@ function stepInstallDockerSwitch() {
     fi
 }
 
+# Install LazyGit TUI from GitHub releases
+# Usage: stepInstallLazyGit
+#   Arguments: none
+#   Returns: 0 on success, non-zero on error
+#   Example: stepInstallLazyGit
+function stepInstallLazyGit() {
+    local LAZYGIT_BIN="${USR_BIN_DIR}/lazygit"
+    local LAZYGIT_REPO="jesseduffield/lazygit"
+    local LAZYGIT_TMP_FILE="/tmp/lazygit.tar.gz"
+    if ! [ -e "${LAZYGIT_BIN}" ]; then
+        logStep "Installing LazyGit..."
+        local LAZYGIT_VERSION
+        LAZYGIT_VERSION=$(getLatestReleaseForRepo "${LAZYGIT_REPO}")
+        # Remove v prefix from version string
+        LAZYGIT_VERSION="${LAZYGIT_VERSION#v}"
+        local LAZYGIT_ASSET="lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+        downloadLatestReleaseArtifact \
+            "${LAZYGIT_REPO}" \
+            "${LAZYGIT_ASSET}" \
+            "${LAZYGIT_TMP_FILE}"
+        runCmdAndLog tar xf "${LAZYGIT_TMP_FILE}" -C /tmp lazygit
+        runCmdAndLog install /tmp/lazygit -D -t "${USR_BIN_DIR}/"
+        runCmdAndLog rm -rf "${LAZYGIT_TMP_FILE}" /tmp/lazygit
+        log "LazyGit installed."
+    else
+        logStep "LazyGit already installed."
+    fi
+}
+
 # Install NeoVim and set it as the default vi/vim editor
 # Usage: stepInstallNeoVim
 #   Arguments: none
@@ -392,10 +444,21 @@ function stepInstallDockerSwitch() {
 function stepInstallNeoVim() {
     if ! [ -e "$(command -v nvim)" ]; then
         logStep "Installing NeoVim..."
-        # Adds repo for latest neovim version
-        runCmdAndLog add-apt-repository -y ppa:neovim-ppa/unstable
-        runCmdAndLog ${APT_CMD} update
-        runCmdAndLog ${APT_INSTALL} neovim
+        if [ "${NVIM_USE_DEB}" = true ]; then
+            # Install from GitHub releases .deb package
+            local NVIM_TMP_FILE="/tmp/nvim.deb"
+            downloadLatestReleaseArtifact \
+                "neovim/neovim-releases" \
+                "nvim-linux-x86_64.deb" \
+                "${NVIM_TMP_FILE}"
+            runCmdAndLog ${APT_INSTALL} "${NVIM_TMP_FILE}"
+            runCmdAndLog rm -f "${NVIM_TMP_FILE}"
+        else
+            # Install from PPA (default)
+            runCmdAndLog add-apt-repository -y ppa:neovim-ppa/unstable
+            runCmdAndLog ${APT_CMD} update
+            runCmdAndLog ${APT_INSTALL} neovim
+        fi
         # Set neovim as default vim
         local NVIM_BIN
         NVIM_BIN="$(command -v nvim)"
@@ -537,6 +600,25 @@ if [ "$(uname -m)" != "x86_64" ]; then
     exit 1
 fi
 
+# Parse command-line arguments
+while [ $# -gt 0 ]; do
+    case "${1}" in
+        --nvim-deb)
+            NVIM_USE_DEB=true
+            ;;
+        --help)
+            usage
+            exit 0
+            ;;
+        *)
+            logError "Unknown option: ${1}"
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
 STEPS=(
     stepUpgradePackages
     stepSetTimezone
@@ -545,6 +627,7 @@ STEPS=(
     stepInstallDocker
     stepInstallDockerCompose
     stepInstallDockerSwitch
+    stepInstallLazyGit
     stepInstallNeoVim
     stepInstallSpeedTest
     stepSetupPython
