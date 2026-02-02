@@ -399,8 +399,8 @@ function stepInstallNeoVim() {
         # Set neovim as default vim
         local NVIM_BIN
         NVIM_BIN="$(command -v nvim)"
-        runCmdAndLog update-alternatives --set vi "${NVIM_BIN}"
-        runCmdAndLog update-alternatives --set vim "${NVIM_BIN}"
+        runCmdAndLog update-alternatives --install /usr/bin/vi vi "${NVIM_BIN}" 110
+        runCmdAndLog update-alternatives --install /usr/bin/vim vim "${NVIM_BIN}" 110
         log "NeoVim installed."
     else
         logStep "NeoVim already installed."
