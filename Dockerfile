@@ -1,6 +1,6 @@
 ARG BASE_IMAGE=ubuntu:24.04
 
-FROM $BASE_IMAGE
+FROM --platform=linux/amd64 $BASE_IMAGE
 
 # Avoids 'Configuring tzdata’ interactive prompt
 # https://techoverflow.net/2019/05/18/how-to-fix-configuring-tzdata-interactive-input-when-building-docker-images/

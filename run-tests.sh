@@ -16,6 +16,7 @@ IMAGE_TAG_BASE=ubuntu-server-bootstrap
 echo "Running tests with ${BASE_IMAGE}"
 
 docker build \
+    --platform linux/amd64 \
     --progress=plain \
     --build-arg BASE_IMAGE=${BASE_IMAGE} \
     -t "${IMAGE_TAG_BASE}-${BASE_IMAGE}" \
